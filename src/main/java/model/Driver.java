@@ -1,9 +1,8 @@
 package model;
 
-import java.io.Serializable;
 import java.util.UUID;
 
-public class Driver extends User implements Serializable {
+public class Driver extends User{
     private static final long serialVersionUID = 1L;
 
     private String documentNumber;

@@ -2,7 +2,6 @@ package service;
 
 import model.Driver;
 import model.Passenger;
-import model.User;
 import repo.UserRepository;
 import util.ValidationException;
 
