@@ -26,14 +26,15 @@ public class Main {
         auth = new AuthService(userRepo, vehicleRepo);
         sc = new Scanner(System.in);
 
-        System.out.println("=== UberPB - Cadastro e Veículos ===");
+        System.out.println("=== UberPB - Cadastro e Login ===");
 
         while (true) {
             System.out.println("\nEscolha uma opção:");
             System.out.println("1 - Cadastrar Passageiro");
             System.out.println("2 - Cadastrar Motorista");
             System.out.println("3 - Adicionar Veículo a Motorista");
-            System.out.println("4 - Listar usuários");
+            System.out.println("4 - Fazer Login");
+            System.out.println("5 - Listar usuários");
             System.out.println("0 - Sair");
             System.out.print("> ");
             String opt = sc.nextLine().trim();
@@ -49,6 +50,9 @@ public class Main {
                         addVehicleToDriver();
                         break;
                     case "4":
+                        loginUser();
+                        break;
+                    case "5":
                         listUsers();
                         break;
                     case "0":
@@ -63,7 +67,7 @@ public class Main {
             } catch (IOException ioe) {
                 System.out.println("Erro de I/O: " + ioe.getMessage());
             } catch (InputMismatchException | NumberFormatException e) {
-                System.out.println("Erro: A entrada para o ano do veículo deve ser um número inteiro.");
+                System.out.println("Erro: A entrada deve ser um número válido.");
                 sc.nextLine(); 
             } catch (Exception e) {
                 System.out.println("Erro inesperado: " + e.getMessage());
@@ -78,7 +82,9 @@ public class Main {
         String email = sc.nextLine();
         System.out.print("Telefone: ");
         String phone = sc.nextLine();
-        Passenger p = auth.registerPassenger(name, email, phone);
+        System.out.print("Senha: ");
+        String password = sc.nextLine();
+        Passenger p = auth.registerPassenger(name, email, phone, password);
         System.out.println("Passageiro cadastrado: " + p);
     }
 
@@ -89,6 +95,8 @@ public class Main {
         String email = sc.nextLine();
         System.out.print("Telefone: ");
         String phone = sc.nextLine();
+        System.out.print("Senha: ");
+        String password = sc.nextLine();
         System.out.print("Documento (CNH): ");
         String doc = sc.nextLine();
         
@@ -105,7 +113,7 @@ public class Main {
             throw new ValidationException("Placa do veículo obrigatória.");
         }
 
-        Driver d = auth.registerDriver(name, email, phone, doc, plate, model, year, color);
+        Driver d = auth.registerDriver(name, email, phone, password, doc, plate, model, year, color);
         System.out.println("Motorista cadastrado: " + d);
     }
     
@@ -127,6 +135,22 @@ public class Main {
         
         Driver d = auth.addVehicleToDriver(email, plate, model, year, color);
         System.out.println("Novo veículo adicionado ao motorista: " + d);
+    }
+    
+    private static void loginUser() {
+        System.out.print("Email: ");
+        String email = sc.nextLine();
+        System.out.print("Senha: ");
+        String password = sc.nextLine();
+        
+        try {
+            User loggedInUser = auth.login(email, password);
+            System.out.println("Login bem-sucedido! Bem-vindo, " + loggedInUser.getName() + " (" + loggedInUser.getRole() + ").");
+        } catch (ValidationException ve) {
+            System.out.println("Erro de login: " + ve.getMessage());
+        } catch (Exception e) {
+            System.out.println("Erro inesperado durante o login: " + e.getMessage());
+        }
     }
 
     private static void listUsers() {

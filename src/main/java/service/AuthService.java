@@ -6,43 +6,40 @@ import model.User;
 import model.Vehicle;
 import repo.UserRepository;
 import repo.VehicleRepository;
+import service.DocumentValidator;
 import util.ValidationException;
-
+import util.Validator; 
 import java.io.IOException;
-import java.util.regex.Pattern;
 
 public class AuthService {
     private final UserRepository userRepo;
     private final VehicleRepository vehicleRepo;
     private final DocumentValidator documentValidator;
-    private final Pattern emailPattern = Pattern.compile("^[\\w.%+\\-]+@[\\w.\\-]+\\.[A-Za-z]{2,}$");
+    private final Validator validator;
 
     public AuthService(UserRepository userRepo, VehicleRepository vehicleRepo) {
         this.userRepo = userRepo;
         this.vehicleRepo = vehicleRepo;
         this.documentValidator = new DocumentValidator();
+        this.validator = new Validator(userRepo); 
     }
 
-    private void validateCommon(String name, String email, String phone) throws ValidationException {
-        if (name == null || name.trim().isEmpty()) throw new ValidationException("Nome obrigatório.");
-        if (email == null || email.trim().isEmpty()) throw new ValidationException("Email obrigatório.");
-        if (!emailPattern.matcher(email.trim()).matches()) throw new ValidationException("Email inválido.");
-        if (phone == null || phone.trim().isEmpty()) throw new ValidationException("Telefone obrigatório.");
-        if (userRepo.existsByEmail(email.trim().toLowerCase())) throw new ValidationException("Usuário com este email já existe.");
-    }
 
-    public Passenger registerPassenger(String name, String email, String phone) throws ValidationException, IOException {
-        validateCommon(name, email, phone);
-        Passenger p = new Passenger(name, email, phone);
+
+    public Passenger registerPassenger(String name, String email, String phone, String password) throws ValidationException, IOException {
+        validator.validateCommon(name, email, phone);
+        validator.validatePassword(password);
+        Passenger p = new Passenger(name, email, phone, password);
         userRepo.add(p);
         return p;
     }
 
-    public Driver registerDriver(String name, String email, String phone,
+    public Driver registerDriver(String name, String email, String phone, String password,
                                  String documentNumber, String vehiclePlate,
                                  String vehicleModel, int vehicleYear, String vehicleColor)
             throws ValidationException, IOException {
-        validateCommon(name, email, phone);
+        validator.validateCommon(name, email, phone);
+        validator.validatePassword(password);
         if (documentNumber == null || documentNumber.trim().isEmpty()) throw new ValidationException("Documento do motorista obrigatório.");
         
         if (vehicleRepo.existsByPlate(vehiclePlate)) {
@@ -52,7 +49,7 @@ public class AuthService {
         Vehicle vehicle = new Vehicle(vehiclePlate, vehicleModel, vehicleYear, vehicleColor);
         documentValidator.validateVehicleCategory(vehicle);
         
-        Driver d = new Driver(name, email, phone, documentNumber, vehicle);
+        Driver d = new Driver(name, email, phone, password, documentNumber, vehicle);
         
         userRepo.add(d);
         vehicleRepo.add(vehicle);
@@ -83,5 +80,26 @@ public class AuthService {
         vehicleRepo.add(newVehicle);
         
         return driver;
+    }
+    
+    public User login(String email, String password) throws ValidationException {
+        if (email == null || email.trim().isEmpty()) {
+            throw new ValidationException("Email não pode ser vazio.");
+        }
+        if (password == null || password.trim().isEmpty()) {
+            throw new ValidationException("Senha não pode ser vazia.");
+        }
+        
+        User user = userRepo.findByEmail(email);
+        
+        if (user == null) {
+            throw new ValidationException("Usuário não encontrado.");
+        }
+        
+        if (!user.getPassword().equals(password)) {
+            throw new ValidationException("Senha incorreta.");
+        }
+        
+        return user;
     }
 }
