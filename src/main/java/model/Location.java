@@ -2,10 +2,6 @@ package model;
 
 import java.io.Serializable;
 
-/**
- * Representa um endereço/localização no sistema.
- * RF04 - Para capturar origem e destino das corridas.
- */
 public class Location implements Serializable {
     private static final long serialVersionUID = 1L;
     

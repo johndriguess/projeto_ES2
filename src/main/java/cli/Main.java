@@ -10,6 +10,7 @@ import model.Driver;
 import model.Passenger;
 import model.VehicleCategory;
 import model.Ride;
+import model.PricingInfo;
 import util.ValidationException;
 
 import java.io.IOException;
@@ -43,8 +44,9 @@ public class Main {
             System.out.println("4 - Fazer Login");
             System.out.println("5 - Listar usuários");
             System.out.println("6 - Listar categorias de veículos (RF06)");
-            System.out.println("7 - Solicitar Corrida (RF04)");
+            System.out.println("7 - Solicitar Corrida (RF04 + RF05)");
             System.out.println("8 - Listar minhas corridas");
+            System.out.println("9 - Calcular preços (RF05)");
 
             System.out.println("0 - Sair");
             System.out.print("> ");
@@ -71,10 +73,13 @@ public class Main {
                         listCategories();
                         break;
                     case "7":
-                        requestRide();
+                        requestRideWithPricing();
                         break;
                     case "8":
                         listMyRides();
+                        break;
+                    case "9":
+                        calculatePricing();
                         break;
                     case "0":
                         System.out.println("Saindo...");
@@ -182,7 +187,6 @@ public class Main {
         System.out.println("-------------------------");
     }
 
-    // RF06
     private static void listCategories() {
         System.out.println("--- Categorias de Veículos Disponíveis ---");
         for (VehicleCategory c : VehicleCategory.values()) {
@@ -191,29 +195,7 @@ public class Main {
         System.out.println("------------------------------------------");
     }
 
-    // RF04 - Solicitar Corrida
-    private static void requestRide() throws ValidationException, IOException {
-        System.out.println("=== Solicitar Corrida (RF04) ===");
-        
-        // Verificar se o usuário está logado
-        System.out.print("Email do passageiro: ");
-        String email = sc.nextLine();
-        
-        System.out.print("Endereço de origem: ");
-        String origin = sc.nextLine();
-        
-        System.out.print("Endereço de destino: ");
-        String destination = sc.nextLine();
-        
-        Ride ride = rideService.createRideRequest(email, origin, destination);
-        System.out.println("Corrida solicitada com sucesso!");
-        System.out.println("ID da corrida: " + ride.getId());
-        System.out.println("Status: " + ride.getStatus().getDisplayName());
-        System.out.println("Origem: " + ride.getOrigin().getAddress());
-        System.out.println("Destino: " + ride.getDestination().getAddress());
-    }
 
-    // Listar corridas do passageiro
     private static void listMyRides() {
         System.out.print("Email do passageiro: ");
         String email = sc.nextLine();
@@ -231,6 +213,103 @@ public class Main {
                 System.out.println(ride);
             }
             System.out.println("--------------------");
+            
+        } catch (ValidationException ve) {
+            System.out.println("Erro: " + ve.getMessage());
+        }
+    }
+
+    private static void calculatePricing() {
+        System.out.println("=== Calcular Preços (RF05) ===");
+        
+        System.out.print("Endereço de origem: ");
+        String origin = sc.nextLine();
+        
+        System.out.print("Endereço de destino: ");
+        String destination = sc.nextLine();
+        
+        try {
+            java.util.List<PricingInfo> pricingList = rideService.calculateAllPricing(origin, destination);
+            
+            System.out.println("\n=== Estimativas de Corrida ===");
+            System.out.println("Origem: " + origin);
+            System.out.println("Destino: " + destination);
+            System.out.println("Distância estimada: " + pricingList.get(0).getFormattedDistance());
+            System.out.println("Tempo estimado: " + pricingList.get(0).getFormattedTime());
+            System.out.println();
+            
+            System.out.println("Opções disponíveis:");
+            for (int i = 0; i < pricingList.size(); i++) {
+                PricingInfo pricing = pricingList.get(i);
+                System.out.printf("%d. %s - %s (%s)\n", 
+                    i + 1, pricing.getCategory(), pricing.getFormattedPrice(), pricing.getFormattedTime());
+            }
+            System.out.println("=============================");
+            
+        } catch (ValidationException ve) {
+            System.out.println("Erro: " + ve.getMessage());
+        }
+    }
+
+    private static void requestRideWithPricing() throws ValidationException, IOException {
+        System.out.println("=== Solicitar Corrida (RF04 + RF05) ===");
+        
+        System.out.print("Email do passageiro: ");
+        String email = sc.nextLine();
+        
+        System.out.print("Endereço de origem: ");
+        String origin = sc.nextLine();
+        
+        System.out.print("Endereço de destino: ");
+        String destination = sc.nextLine();
+        
+        try {
+            // Calcular preços para todas as categorias
+            java.util.List<PricingInfo> pricingList = rideService.calculateAllPricing(origin, destination);
+            
+            System.out.println("\n=== Estimativas de Corrida ===");
+            System.out.println("Origem: " + origin);
+            System.out.println("Destino: " + destination);
+            System.out.println("Distância estimada: " + pricingList.get(0).getFormattedDistance());
+            System.out.println("Tempo estimado: " + pricingList.get(0).getFormattedTime());
+            System.out.println();
+            
+            System.out.println("Opções disponíveis:");
+            for (int i = 0; i < pricingList.size(); i++) {
+                PricingInfo pricing = pricingList.get(i);
+                System.out.printf("%d. %s - %s (%s)\n", 
+                    i + 1, pricing.getCategory(), pricing.getFormattedPrice(), pricing.getFormattedTime());
+            }
+            System.out.println();
+            
+            System.out.print("Escolha uma opção (1-" + pricingList.size() + "): ");
+            String choice = sc.nextLine().trim();
+            
+            try {
+                int optionIndex = Integer.parseInt(choice) - 1;
+                if (optionIndex >= 0 && optionIndex < pricingList.size()) {
+                    PricingInfo selectedPricing = pricingList.get(optionIndex);
+                    
+                    // Criar a corrida
+                    Ride ride = rideService.createRideRequest(email, origin, destination);
+                    
+                    // Definir a categoria escolhida
+                    rideService.setVehicleCategory(ride.getId(), selectedPricing.getCategory());
+                    
+                    System.out.println("\n=== Corrida Solicitada com Sucesso! ===");
+                    System.out.println("ID da corrida: " + ride.getId());
+                    System.out.println("Categoria escolhida: " + selectedPricing.getCategory());
+                    System.out.println("Preço estimado: " + selectedPricing.getFormattedPrice());
+                    System.out.println("Tempo estimado: " + selectedPricing.getFormattedTime());
+                    System.out.println("Status: " + ride.getStatus().getDisplayName());
+                    System.out.println("=====================================");
+                    
+                } else {
+                    System.out.println("Opção inválida.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Opção inválida. Digite um número.");
+            }
             
         } catch (ValidationException ve) {
             System.out.println("Erro: " + ve.getMessage());

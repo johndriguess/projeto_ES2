@@ -5,10 +5,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
-/**
- * Representa uma corrida solicitada no sistema.
- * RF04 - Para gerenciar solicitações de corrida com origem e destino.
- */
 public class Ride implements Serializable {
     private static final long serialVersionUID = 1L;
     
@@ -47,10 +43,9 @@ public class Ride implements Serializable {
         this.destination = destination;
         this.status = RideStatus.SOLICITADA;
         this.requestTime = LocalDateTime.now();
-        this.vehicleCategory = null; // Será definida quando o passageiro escolher
+        this.vehicleCategory = null;
     }
     
-    // Getters
     public String getId() {
         return id;
     }
@@ -83,7 +78,6 @@ public class Ride implements Serializable {
         return vehicleCategory;
     }
     
-    // Setters
     public void setStatus(RideStatus status) {
         this.status = status;
     }
@@ -98,6 +92,6 @@ public class Ride implements Serializable {
         return String.format("Ride[id=%s, passenger=%s, origin=%s, destination=%s, status=%s, time=%s, category=%s]",
                 id, passengerEmail, origin.getAddress(), destination.getAddress(), 
                 status.getDisplayName(), requestTime.format(formatter), 
-                vehicleCategory != null ? vehicleCategory : "Não definida");
+                vehicleCategory != null ? vehicleCategory : "Nao definida");
     }
 }
