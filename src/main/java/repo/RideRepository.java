@@ -5,13 +5,9 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Repositório para gerenciar persistência de corridas.
- * RF04 - Para armazenar solicitações de corrida.
- */
 public class RideRepository {
     private final File storageFile;
-    private Map<String, Ride> ridesById; // id -> Ride
+    private Map<String, Ride> ridesById;
 
     public RideRepository(String pathToFile) {
         this.storageFile = new File(pathToFile);

@@ -16,9 +16,6 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Testes unitários para RideService - RF04
- */
 public class RideServiceTest {
     
     @TempDir
@@ -35,21 +32,16 @@ public class RideServiceTest {
         userRepo = new UserRepository(tempDir.resolve("test_users.db").toString());
         rideService = new RideService(rideRepo, userRepo);
         
-        // Criar passageiro de teste
         testPassenger = new Passenger("João Silva", "joao@test.com", "83999999999", "senha123");
         userRepo.add(testPassenger);
     }
     
     @Test
     void testCreateRideRequest_Success() throws ValidationException, IOException {
-        // Arrange
         String origin = "Rua A, 123, Centro";
         String destination = "Rua B, 456, Bairro Novo";
         
-        // Act
         Ride ride = rideService.createRideRequest("joao@test.com", origin, destination);
-        
-        // Assert
         assertNotNull(ride);
         assertEquals("joao@test.com", ride.getPassengerEmail());
         assertEquals(origin, ride.getOrigin().getAddress());
@@ -61,7 +53,6 @@ public class RideServiceTest {
     
     @Test
     void testCreateRideRequest_UserNotFound() {
-        // Act & Assert
         ValidationException exception = assertThrows(ValidationException.class, () -> {
             rideService.createRideRequest("inexistente@test.com", "Rua A", "Rua B");
         });
@@ -71,11 +62,9 @@ public class RideServiceTest {
     
     @Test
     void testCreateRideRequest_NotPassenger() throws IOException {
-        // Arrange - Criar um motorista
         model.Driver driver = new model.Driver("Motorista", "motorista@test.com", "83988888888", "senha123", "123456789");
         userRepo.add(driver);
         
-        // Act & Assert
         ValidationException exception = assertThrows(ValidationException.class, () -> {
             rideService.createRideRequest("motorista@test.com", "Rua A", "Rua B");
         });
@@ -85,7 +74,6 @@ public class RideServiceTest {
     
     @Test
     void testCreateRideRequest_EmptyOrigin() {
-        // Act & Assert
         ValidationException exception = assertThrows(ValidationException.class, () -> {
             rideService.createRideRequest("joao@test.com", "", "Rua B");
         });
@@ -95,7 +83,6 @@ public class RideServiceTest {
     
     @Test
     void testCreateRideRequest_EmptyDestination() {
-        // Act & Assert
         ValidationException exception = assertThrows(ValidationException.class, () -> {
             rideService.createRideRequest("joao@test.com", "Rua A", "");
         });
@@ -105,7 +92,6 @@ public class RideServiceTest {
     
     @Test
     void testCreateRideRequest_SameOriginAndDestination() {
-        // Act & Assert
         ValidationException exception = assertThrows(ValidationException.class, () -> {
             rideService.createRideRequest("joao@test.com", "Rua A", "Rua A");
         });
@@ -115,7 +101,6 @@ public class RideServiceTest {
     
     @Test
     void testCreateRideRequest_ShortOrigin() {
-        // Act & Assert
         ValidationException exception = assertThrows(ValidationException.class, () -> {
             rideService.createRideRequest("joao@test.com", "Rua", "Rua B, 456");
         });
@@ -125,7 +110,6 @@ public class RideServiceTest {
     
     @Test
     void testCreateRideRequest_ShortDestination() {
-        // Act & Assert
         ValidationException exception = assertThrows(ValidationException.class, () -> {
             rideService.createRideRequest("joao@test.com", "Rua A, 123", "Rua");
         });
@@ -135,14 +119,10 @@ public class RideServiceTest {
     
     @Test
     void testGetRideById_Success() throws ValidationException, IOException {
-        // Arrange
         Ride ride = rideService.createRideRequest("joao@test.com", "Rua A", "Rua B");
         String rideId = ride.getId();
         
-        // Act
         Ride foundRide = rideService.getRideById(rideId);
-        
-        // Assert
         assertNotNull(foundRide);
         assertEquals(rideId, foundRide.getId());
         assertEquals("joao@test.com", foundRide.getPassengerEmail());
@@ -150,7 +130,6 @@ public class RideServiceTest {
     
     @Test
     void testGetRideById_NotFound() {
-        // Act & Assert
         ValidationException exception = assertThrows(ValidationException.class, () -> {
             rideService.getRideById("inexistente");
         });
@@ -160,61 +139,46 @@ public class RideServiceTest {
     
     @Test
     void testGetRidesByPassenger_Success() throws ValidationException, IOException {
-        // Arrange
         rideService.createRideRequest("joao@test.com", "Rua A", "Rua B");
         rideService.createRideRequest("joao@test.com", "Rua C", "Rua D");
         
-        // Act
         java.util.Collection<Ride> rides = rideService.getRidesByPassenger("joao@test.com");
-        
-        // Assert
         assertEquals(2, rides.size());
     }
     
     @Test
     void testGetRidesByPassenger_Empty() throws ValidationException {
-        // Act
         java.util.Collection<Ride> rides = rideService.getRidesByPassenger("joao@test.com");
-        
-        // Assert
         assertTrue(rides.isEmpty());
     }
     
     @Test
     void testUpdateRideStatus_Success() throws ValidationException, IOException {
-        // Arrange
         Ride ride = rideService.createRideRequest("joao@test.com", "Rua A", "Rua B");
         String rideId = ride.getId();
         
-        // Act
         rideService.updateRideStatus(rideId, Ride.RideStatus.ACEITA);
         
-        // Assert
         Ride updatedRide = rideService.getRideById(rideId);
         assertEquals(Ride.RideStatus.ACEITA, updatedRide.getStatus());
     }
     
     @Test
     void testSetVehicleCategory_Success() throws ValidationException, IOException {
-        // Arrange
         Ride ride = rideService.createRideRequest("joao@test.com", "Rua A", "Rua B");
         String rideId = ride.getId();
         
-        // Act
         rideService.setVehicleCategory(rideId, "UberX");
         
-        // Assert
         Ride updatedRide = rideService.getRideById(rideId);
         assertEquals("UberX", updatedRide.getVehicleCategory());
     }
     
     @Test
     void testSetVehicleCategory_EmptyCategory() throws ValidationException, IOException {
-        // Arrange
         Ride ride = rideService.createRideRequest("joao@test.com", "Rua A", "Rua B");
         String rideId = ride.getId();
         
-        // Act & Assert
         ValidationException exception = assertThrows(ValidationException.class, () -> {
             rideService.setVehicleCategory(rideId, "");
         });
