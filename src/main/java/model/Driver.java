@@ -3,25 +3,32 @@ package model;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 public class Driver extends User implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String documentNumber;
     private List<Vehicle> vehicles;
-
-    public Driver(String name, String email, String phone, String documentNumber) {
-        super(UUID.randomUUID().toString(), name, email, phone);
+    
+    public Driver(String name, String email, String phone, String password, String documentNumber) {
+        super(name, email, phone, password);
         this.documentNumber = documentNumber.trim();
         this.vehicles = new ArrayList<>(); 
     }
     
-    public Driver(String name, String email, String phone, String documentNumber, Vehicle vehicle) {
-        this(name, email, phone, documentNumber);
+    //  usado para o cadastro com veículo
+    public Driver(String name, String email, String phone, String password, String documentNumber, Vehicle vehicle) {
+        this(name, email, phone, password, documentNumber);
         if (vehicle != null) {
             this.vehicles.add(vehicle);
         }
+    }
+    
+    // Construtor auxiliar para desserialização
+    public Driver(String id, String name, String email, String phone, String password, String documentNumber) {
+        super(id, name, email, phone, password);
+        this.documentNumber = documentNumber.trim();
+        this.vehicles = new ArrayList<>();
     }
 
     public String getDocumentNumber() { return documentNumber; }
@@ -40,6 +47,11 @@ public class Driver extends User implements Serializable {
         if (vehicle != null) {
             this.vehicles.add(vehicle);
         }
+    }
+    
+    @Override
+    public String getRole() {
+        return "DRIVER";
     }
 
     @Override
