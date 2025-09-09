@@ -2,11 +2,14 @@ package cli;
 
 import repo.UserRepository;
 import repo.VehicleRepository;
+import repo.RideRepository;
 import service.AuthService;
+import service.RideService;
 import model.User;
 import model.Driver;
 import model.Passenger;
 import model.VehicleCategory;
+import model.Ride;
 import util.ValidationException;
 
 import java.io.IOException;
@@ -16,15 +19,20 @@ import java.util.Scanner;
 public class Main {
     private static final String USER_DB = "users.db";
     private static final String VEHICLE_DB = "vehicles.db";
+    private static final String RIDE_DB = "rides.db";
     private static UserRepository userRepo;
     private static VehicleRepository vehicleRepo;
+    private static RideRepository rideRepo;
     private static AuthService auth;
+    private static RideService rideService;
     private static Scanner sc;
 
     public static void main(String[] args) {
         userRepo = new UserRepository(USER_DB);
         vehicleRepo = new VehicleRepository(VEHICLE_DB);
+        rideRepo = new RideRepository(RIDE_DB);
         auth = new AuthService(userRepo, vehicleRepo);
+        rideService = new RideService(rideRepo, userRepo);
         sc = new Scanner(System.in);
         System.out.println("=== UberPB ===");
         while (true) {
@@ -35,6 +43,8 @@ public class Main {
             System.out.println("4 - Fazer Login");
             System.out.println("5 - Listar usuários");
             System.out.println("6 - Listar categorias de veículos (RF06)");
+            System.out.println("7 - Solicitar Corrida (RF04)");
+            System.out.println("8 - Listar minhas corridas");
 
             System.out.println("0 - Sair");
             System.out.print("> ");
@@ -59,6 +69,12 @@ public class Main {
                         break;
                     case "6":
                         listCategories();
+                        break;
+                    case "7":
+                        requestRide();
+                        break;
+                    case "8":
+                        listMyRides();
                         break;
                     case "0":
                         System.out.println("Saindo...");
@@ -173,5 +189,51 @@ public class Main {
             System.out.println(c.name() + " - " + c.getDescription());
         }
         System.out.println("------------------------------------------");
+    }
+
+    // RF04 - Solicitar Corrida
+    private static void requestRide() throws ValidationException, IOException {
+        System.out.println("=== Solicitar Corrida (RF04) ===");
+        
+        // Verificar se o usuário está logado
+        System.out.print("Email do passageiro: ");
+        String email = sc.nextLine();
+        
+        System.out.print("Endereço de origem: ");
+        String origin = sc.nextLine();
+        
+        System.out.print("Endereço de destino: ");
+        String destination = sc.nextLine();
+        
+        Ride ride = rideService.createRideRequest(email, origin, destination);
+        System.out.println("Corrida solicitada com sucesso!");
+        System.out.println("ID da corrida: " + ride.getId());
+        System.out.println("Status: " + ride.getStatus().getDisplayName());
+        System.out.println("Origem: " + ride.getOrigin().getAddress());
+        System.out.println("Destino: " + ride.getDestination().getAddress());
+    }
+
+    // Listar corridas do passageiro
+    private static void listMyRides() {
+        System.out.print("Email do passageiro: ");
+        String email = sc.nextLine();
+        
+        try {
+            java.util.Collection<Ride> rides = rideService.getRidesByPassenger(email);
+            
+            if (rides.isEmpty()) {
+                System.out.println("Nenhuma corrida encontrada para este passageiro.");
+                return;
+            }
+            
+            System.out.println("--- Suas Corridas ---");
+            for (Ride ride : rides) {
+                System.out.println(ride);
+            }
+            System.out.println("--------------------");
+            
+        } catch (ValidationException ve) {
+            System.out.println("Erro: " + ve.getMessage());
+        }
     }
 }
