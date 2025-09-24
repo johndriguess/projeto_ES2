@@ -185,4 +185,35 @@ public class RideServiceTest {
         
         assertEquals("Categoria do veículo é obrigatória.", exception.getMessage());
     }
+
+    @Test
+    void testCreateRideRequest_ShouldNotifyCorrectDrivers() throws IOException, ValidationException {
+        // Arrange: Create drivers with different vehicle categories
+        model.Driver driverUberX = new model.Driver("Motorista UberX", "driverx@test.com", "83911111111", "senha123", "111");
+        driverUberX.setVehicle(new model.Vehicle("P-111", "Onix", 2020, "Branco", model.VehicleCategory.UBER_X));
+        userRepo.add(driverUberX);
+
+        model.Driver driverComfort = new model.Driver("Motorista Comfort", "drivercomfort@test.com", "83922222222", "senha123", "222");
+        driverComfort.setVehicle(new model.Vehicle("P-222", "Corolla", 2022, "Preto", model.VehicleCategory.UBER_COMFORT));
+        userRepo.add(driverComfort);
+
+        model.Driver driverNoVehicle = new model.Driver("Motorista Sem Carro", "drivernovehicle@test.com", "83933333333", "senha123", "333");
+        userRepo.add(driverNoVehicle);
+
+        // Capture System.out
+        java.io.ByteArrayOutputStream outContent = new java.io.ByteArrayOutputStream();
+        System.setOut(new java.io.PrintStream(outContent));
+
+        // Act: Request a ride for a specific category
+        rideService.createRideRequest("joao@test.com", "Rua Origem", "Rua Destino", "UberX");
+
+        // Assert: Check the console output for notifications
+        String output = outContent.toString();
+        assertTrue(output.contains("Notificando motorista Motorista UberX"));
+        assertFalse(output.contains("Notificando motorista Motorista Comfort"));
+        assertFalse(output.contains("Notificando motorista Motorista Sem Carro"));
+
+        // Clean up
+        System.setOut(new java.io.PrintStream(new java.io.FileOutputStream(java.io.FileDescriptor.out)));
+    }
 }

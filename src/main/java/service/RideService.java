@@ -22,28 +22,41 @@ public class RideService {
         this.pricingService = new PricingService();
     }
 
-    public Ride createRideRequest(String passengerEmail, String originAddress, String destinationAddress) 
+    public Ride createRideRequest(String passengerEmail, String originAddress, String destinationAddress, String vehicleCategory)
             throws ValidationException, IOException {
-        
+
         User user = userRepo.findByEmail(passengerEmail);
         if (user == null) {
             throw new ValidationException("Usuário não encontrado.");
         }
-        
+
         if (!(user instanceof Passenger)) {
             throw new ValidationException("Apenas passageiros podem solicitar corridas.");
         }
-        
+
         validateRideRequest(originAddress, destinationAddress);
-        
+
         Location origin = new Location(originAddress);
         Location destination = new Location(destinationAddress);
-        
+
         Ride ride = new Ride(user.getId(), passengerEmail, origin, destination);
-        
+        ride.setVehicleCategory(vehicleCategory); // Set the category
+
         rideRepo.add(ride);
-        
+
+        // Notify drivers
+        notifyDriversByCategory(ride);
+
         return ride;
+    }
+
+    public void notifyDriversByCategory(Ride ride) {
+        System.out.println("Notificando motoristas da categoria " + ride.getVehicleCategory() + "...");
+        userRepo.findAll().stream()
+                .filter(u -> u instanceof model.Driver)
+                .map(u -> (model.Driver) u)
+                .filter(d -> d.getVehicle() != null && d.getVehicle().getCategory().getName().equalsIgnoreCase(ride.getVehicleCategory()))
+                .forEach(d -> System.out.println("Notificando motorista " + d.getName() + " para a corrida de " + ride.getOrigin().getAddress()));
     }
 
     private void validateRideRequest(String originAddress, String destinationAddress) throws ValidationException {
