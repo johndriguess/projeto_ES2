@@ -290,12 +290,9 @@ public class Main {
                 if (optionIndex >= 0 && optionIndex < pricingList.size()) {
                     PricingInfo selectedPricing = pricingList.get(optionIndex);
                     
-                    // Criar a corrida
-                    Ride ride = rideService.createRideRequest(email, origin, destination);
-                    
-                    // Definir a categoria escolhida
-                    rideService.setVehicleCategory(ride.getId(), selectedPricing.getCategory());
-                    
+                    // Criar a corrida, agora passando a categoria diretamente
+                    Ride ride = rideService.createRideRequest(email, origin, destination, selectedPricing.getCategory());
+
                     System.out.println("\n=== Corrida Solicitada com Sucesso! ===");
                     System.out.println("ID da corrida: " + ride.getId());
                     System.out.println("Categoria escolhida: " + selectedPricing.getCategory());
