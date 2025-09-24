@@ -10,6 +10,7 @@ import repo.UserRepository;
 import util.ValidationException;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class RideService {
     private final RideRepository rideRepo;
@@ -146,5 +147,56 @@ public class RideService {
 
     public java.util.Set<String> getAvailableCategories() {
         return pricingService.getAvailableCategories();
+    }
+
+    public List<Ride> getPendingRidesForDriver(String driverEmail) throws ValidationException {
+        User user = userRepo.findByEmail(driverEmail);
+        if (!(user instanceof model.Driver)) {
+            throw new ValidationException("Apenas motoristas podem ver as corridas disponíveis.");
+        }
+        model.Driver driver = (model.Driver) user;
+        if (driver.getVehicle() == null) {
+            throw new ValidationException("Você precisa ter um veículo para aceitar corridas.");
+        }
+        String category = driver.getVehicle().getCategory().getName();
+        return rideRepo.findByStatus(Ride.RideStatus.SOLICITADA)
+                .stream()
+                .filter(r -> r.getVehicleCategory().equalsIgnoreCase(category))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    public void acceptRide(String rideId, String driverEmail) throws ValidationException, IOException {
+        User user = userRepo.findByEmail(driverEmail);
+        if (!(user instanceof model.Driver)) {
+            throw new ValidationException("Apenas motoristas podem aceitar corridas.");
+        }
+        Ride ride = getRideById(rideId);
+        if (ride.getStatus() != Ride.RideStatus.SOLICITADA) {
+            throw new ValidationException("Esta corrida não está mais disponível.");
+        }
+        model.Driver driver = (model.Driver) user;
+        if (driver.getVehicle() == null) {
+            throw new ValidationException("Você precisa ter um veículo para aceitar corridas.");
+        }
+        if (!ride.getVehicleCategory().equalsIgnoreCase(driver.getVehicle().getCategory().getName())) {
+            throw new ValidationException("Você não pode aceitar esta corrida com seu veículo atual.");
+        }
+        ride.setStatus(Ride.RideStatus.ACEITA);
+        rideRepo.update(ride);
+        System.out.println("Corrida aceita! Passageiro " + ride.getPassengerEmail() + " foi notificado.");
+    }
+
+    public void refuseRide(String rideId, String driverEmail) throws ValidationException, IOException {
+        User user = userRepo.findByEmail(driverEmail);
+        if (!(user instanceof model.Driver)) {
+            throw new ValidationException("Apenas motoristas podem recusar corridas.");
+        }
+        Ride ride = getRideById(rideId);
+        if (ride.getStatus() != Ride.RideStatus.SOLICITADA) {
+            throw new ValidationException("Esta corrida não está mais disponível.");
+        }
+        // We don't need to do anything, the ride remains available for other drivers.
+        // For simplicity, we'll just print a message.
+        System.out.println("Você recusou a corrida. Ela permanecerá disponível para outros motoristas.");
     }
 }
