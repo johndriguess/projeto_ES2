@@ -47,6 +47,7 @@ public class Main {
             System.out.println("7 - Solicitar Corrida (RF04 + RF05)");
             System.out.println("8 - Listar minhas corridas");
             System.out.println("9 - Calcular preços (RF05)");
+            System.out.println("10 - Ver Corridas Disponíveis (RF08)");
 
             System.out.println("0 - Sair");
             System.out.print("> ");
@@ -80,6 +81,9 @@ public class Main {
                         break;
                     case "9":
                         calculatePricing();
+                        break;
+                    case "10":
+                        viewAvailableRides();
                         break;
                     case "0":
                         System.out.println("Saindo...");
@@ -310,6 +314,48 @@ public class Main {
             
         } catch (ValidationException ve) {
             System.out.println("Erro: " + ve.getMessage());
+        }
+    }
+
+    private static void viewAvailableRides() throws ValidationException, IOException {
+        System.out.print("Email do motorista: ");
+        String email = sc.nextLine();
+
+        User user = userRepo.findByEmail(email);
+        if (user == null || !(user instanceof Driver)) {
+            System.out.println("Apenas motoristas podem ver as corridas disponíveis.");
+            return;
+        }
+
+        java.util.List<Ride> pendingRides = rideService.getPendingRidesForDriver(email);
+
+        if (pendingRides.isEmpty()) {
+            System.out.println("Nenhuma corrida disponível para você no momento.");
+            return;
+        }
+
+        System.out.println("--- Corridas Disponíveis ---");
+        for (Ride ride : pendingRides) {
+            System.out.println(ride);
+        }
+        System.out.println("--------------------------");
+
+        System.out.print("Digite o ID da corrida que deseja aceitar ou 'cancelar' para voltar: ");
+        String rideId = sc.nextLine();
+
+        if (rideId.equalsIgnoreCase("cancelar")) {
+            return;
+        }
+
+        System.out.print("Você deseja (A)ceitar ou (R)ecusar esta corrida? ");
+        String choice = sc.nextLine();
+
+        if (choice.equalsIgnoreCase("A")) {
+            rideService.acceptRide(rideId, email);
+        } else if (choice.equalsIgnoreCase("R")) {
+            rideService.refuseRide(rideId, email);
+        } else {
+            System.out.println("Opção inválida.");
         }
     }
 }
