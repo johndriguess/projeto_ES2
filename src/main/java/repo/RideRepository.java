@@ -24,7 +24,7 @@ public class RideRepository {
             Object o = ois.readObject();
             ridesById = (Map<String, Ride>) o;
         } catch (Exception e) {
-            System.err.println("Não foi possível carregar armazenamento de corridas. Inicializando vazio. (" + e.getMessage() + ")");
+            System.err.println("Não foi possível carregar armazenamento de corridas. Inicializando vazio... (" + e.getMessage() + ")");
             ridesById = new HashMap<>();
         }
     }
