@@ -8,6 +8,7 @@ import java.util.UUID;
 public class Ride implements Serializable {
     private static final long serialVersionUID = 1L;
     private String driverId;
+    private Location driverCurrentLocation;
     
     public enum RideStatus {
         SOLICITADA("Solicitada"),
@@ -93,6 +94,14 @@ public class Ride implements Serializable {
     
     public void setDriverId(String driverId) {
         this.driverId = driverId;
+    }
+    
+    public Location getDriverCurrentLocation() {
+        return driverCurrentLocation;
+    }
+
+    public void setDriverCurrentLocation(Location driverCurrentLocation) {
+        this.driverCurrentLocation = driverCurrentLocation;
     }
     
     @Override

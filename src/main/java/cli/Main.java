@@ -48,6 +48,7 @@ public class Main {
             System.out.println("8 - Listar minhas corridas");
             System.out.println("9 - Calcular preços (RF05)");
             System.out.println("10 - Ver Corridas Disponíveis (RF08)");
+            System.out.println("11 - Acompanhar Corrida (RF10)"); // Nova opção de menu
 
             System.out.println("0 - Sair");
             System.out.print("> ");
@@ -85,6 +86,9 @@ public class Main {
                     case "10":
                         viewAvailableRides();
                         break;
+                    case "11":
+                        trackRide(); // Chamada para o novo método
+                        break;
                     case "0":
                         System.out.println("Saindo...");
                         sc.close();
@@ -102,6 +106,34 @@ public class Main {
             } catch (Exception e) {
                 System.out.println("Erro inesperado: " + e.getMessage());
             }
+        }
+    }
+    
+    // Método para acompanhar uma corrida (RF10)
+    private static void trackRide() {
+        System.out.print("Digite o ID da corrida para acompanhar: ");
+        String rideId = sc.nextLine().trim();
+
+        try {
+            Ride ride = rideService.getRideById(rideId);
+            System.out.println("--- Acompanhamento de Corrida ---");
+            System.out.println("ID da corrida: " + ride.getId());
+            System.out.println("Status: " + ride.getStatus().getDisplayName());
+
+            if (ride.getStatus() == Ride.RideStatus.ACEITA || ride.getStatus() == Ride.RideStatus.EM_ANDAMENTO) {
+                // Aqui você pode adicionar lógica para mostrar a localização do motorista
+                // Por exemplo, uma mensagem simulando o rastreamento
+                if (ride.getDriverCurrentLocation() != null) {
+                    System.out.println("Localização atual do motorista: " + ride.getDriverCurrentLocation().getAddress());
+                } else {
+                    System.out.println("Localização do motorista ainda não disponível.");
+                }
+            } else {
+                System.out.println("Não é possível acompanhar uma corrida com este status.");
+            }
+            System.out.println("------------------------------");
+        } catch (ValidationException ve) {
+            System.out.println("Erro: " + ve.getMessage());
         }
     }
 

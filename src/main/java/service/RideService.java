@@ -5,11 +5,11 @@ import model.Location;
 import model.Passenger;
 import model.User;
 import model.PricingInfo;
-import model.Driver; // Importar a classe Driver
+import model.Driver;
 import repo.RideRepository;
 import repo.UserRepository;
 import util.ValidationException;
-import util.DistanceCalculator; // Importar a classe DistanceCalculator
+import util.DistanceCalculator;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -48,7 +48,6 @@ public class RideService {
 
         rideRepo.add(ride);
 
-        // Atribuir motorista mais próximo 
         assignClosestDriver(ride);
 
         return ride;
@@ -72,13 +71,11 @@ public class RideService {
 
         if (eligibleDrivers.isEmpty()) {
             System.out.println("Nenhum motorista disponível na categoria " + ride.getVehicleCategory());
-            // A corrida permanece com o status SOLICITADA
             return;
         }
 
-        // Encontra o motorista mais próximo
         Driver closestDriver = eligibleDrivers.stream()
-                .min(Comparator.comparingDouble(d -> DistanceCalculator.calculateDistance(ride.getOrigin().getAddress(), d.getVehicles().get(0).getPlate()))) // Usando a placa como substituto para localização
+                .min(Comparator.comparingDouble(d -> DistanceCalculator.calculateDistance(ride.getOrigin().getAddress(), d.getVehicles().get(0).getPlate())))
                 .orElse(null);
 
         if (closestDriver != null) {
@@ -91,6 +88,25 @@ public class RideService {
         }
     }
 
+    public void updateDriverLocation(String rideId, String newAddress) throws ValidationException, IOException {
+        // Validação do novo endereço
+        if (newAddress == null || newAddress.trim().isEmpty()) {
+            throw new ValidationException("O novo endereço de localização do motorista é obrigatório.");
+        }
+
+        Ride ride = getRideById(rideId);
+
+        // Validação para status da corrida
+        if (ride.getStatus() == Ride.RideStatus.FINALIZADA || ride.getStatus() == Ride.RideStatus.CANCELADA) {
+            throw new ValidationException("Não é possível atualizar a localização. A corrida já foi finalizada ou cancelada.");
+        }
+
+        Location newLocation = new Location(newAddress);
+        ride.setDriverCurrentLocation(newLocation);
+        rideRepo.update(ride);
+
+        System.out.println("Localização do motorista atualizada para: " + newAddress);
+    }
 
     private void validateRideRequest(String originAddress, String destinationAddress) throws ValidationException {
         if (originAddress == null || originAddress.trim().isEmpty()) {
@@ -227,8 +243,6 @@ public class RideService {
         if (ride.getStatus() != Ride.RideStatus.SOLICITADA) {
             throw new ValidationException("Esta corrida não está mais disponível.");
         }
-        // We don't need to do anything, the ride remains available for other drivers.
-        // For simplicity, we'll just print a message.
         System.out.println("Você recusou a corrida. Ela permanecerá disponível para outros motoristas.");
     }
 }
