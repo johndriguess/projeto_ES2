@@ -7,6 +7,7 @@ import java.util.UUID;
 
 public class Ride implements Serializable {
     private static final long serialVersionUID = 1L;
+    private String driverId;
     
     public enum RideStatus {
         SOLICITADA("Solicitada"),
@@ -84,6 +85,14 @@ public class Ride implements Serializable {
     
     public void setVehicleCategory(String vehicleCategory) {
         this.vehicleCategory = vehicleCategory;
+    }
+    
+    public String getDriverId() {
+        return driverId;
+    }
+    
+    public void setDriverId(String driverId) {
+        this.driverId = driverId;
     }
     
     @Override
