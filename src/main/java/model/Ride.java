@@ -3,6 +3,7 @@ package model;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.UUID;
 
 public class Ride implements Serializable {
@@ -36,6 +37,8 @@ public class Ride implements Serializable {
     private RideStatus status;
     private LocalDateTime requestTime;
     private String vehicleCategory;
+    private int estimatedTimeMinutes;
+    private List<String> optimizedRoute;
     
     public Ride(String passengerId, String passengerEmail, Location origin, Location destination) {
         this.id = UUID.randomUUID().toString();
@@ -102,6 +105,22 @@ public class Ride implements Serializable {
 
     public void setDriverCurrentLocation(Location driverCurrentLocation) {
         this.driverCurrentLocation = driverCurrentLocation;
+    }
+    
+    public int getEstimatedTimeMinutes() {
+        return estimatedTimeMinutes;
+    }
+
+    public void setEstimatedTimeMinutes(int estimatedTimeMinutes) {
+        this.estimatedTimeMinutes = estimatedTimeMinutes;
+    }
+    
+    public List<String> getOptimizedRoute() {
+        return optimizedRoute;
+    }
+
+    public void setOptimizedRoute(List<String> optimizedRoute) {
+        this.optimizedRoute = optimizedRoute;
     }
     
     @Override

@@ -14,6 +14,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Comparator;
+import java.util.Collection;
+import java.util.Set;
+import java.util.Arrays; // Importação adicionada
 
 public class RideService {
     private final RideRepository rideRepo;
@@ -89,23 +92,67 @@ public class RideService {
     }
 
     public void updateDriverLocation(String rideId, String newAddress) throws ValidationException, IOException {
-        // Validação do novo endereço
         if (newAddress == null || newAddress.trim().isEmpty()) {
             throw new ValidationException("O novo endereço de localização do motorista é obrigatório.");
         }
 
         Ride ride = getRideById(rideId);
 
-        // Validação para status da corrida
         if (ride.getStatus() == Ride.RideStatus.FINALIZADA || ride.getStatus() == Ride.RideStatus.CANCELADA) {
             throw new ValidationException("Não é possível atualizar a localização. A corrida já foi finalizada ou cancelada.");
         }
 
         Location newLocation = new Location(newAddress);
         ride.setDriverCurrentLocation(newLocation);
+
+        calculateAndUpdateETA(ride);
+        generateOptimizedRoute(ride);
+
         rideRepo.update(ride);
 
         System.out.println("Localização do motorista atualizada para: " + newAddress);
+    }
+    
+    private void calculateAndUpdateETA(Ride ride) throws ValidationException {
+        if (ride.getDriverCurrentLocation() == null || ride.getDestination() == null) {
+            throw new ValidationException("Não foi possível calcular a ETA. Localização do motorista ou destino não definidos.");
+        }
+        
+        if (ride.getVehicleCategory() == null || ride.getVehicleCategory().isEmpty()) {
+            throw new ValidationException("Não foi possível calcular a ETA. Categoria do veículo não definida.");
+        }
+
+        double speedKmH = pricingService.getSpeedForCategory(ride.getVehicleCategory());
+
+        double distance = DistanceCalculator.calculateDistance(
+            ride.getDriverCurrentLocation().getAddress(), 
+            ride.getDestination().getAddress()
+        );
+
+        int time = DistanceCalculator.calculateEstimatedTime(distance, speedKmH);
+        
+        ride.setEstimatedTimeMinutes(time);
+        
+        System.out.println("Estimativa de chegada atualizada para: " + time + " minutos.");
+    }
+
+    private void generateOptimizedRoute(Ride ride) throws ValidationException {
+        if (ride.getDriverCurrentLocation() == null || ride.getDestination() == null) {
+            throw new ValidationException("Não foi possível gerar a rota. Localização do motorista ou destino não definidos.");
+        }
+        
+        String startAddress = ride.getDriverCurrentLocation().getAddress();
+        String endAddress = ride.getDestination().getAddress();
+        
+        List<String> routeSteps = Arrays.asList(
+            "Saia de " + startAddress,
+            "Siga em frente por 2km.",
+            "Aguarde o semáforo na Rua Central.",
+            "Vire à direita na Rua Principal.",
+            "Você chegou ao seu destino: " + endAddress
+        );
+
+        ride.setOptimizedRoute(routeSteps);
     }
 
     private void validateRideRequest(String originAddress, String destinationAddress) throws ValidationException {
@@ -143,7 +190,7 @@ public class RideService {
         return ride;
     }
 
-    public java.util.Collection<Ride> getRidesByPassenger(String passengerEmail) throws ValidationException {
+    public Collection<Ride> getRidesByPassenger(String passengerEmail) throws ValidationException {
         if (passengerEmail == null || passengerEmail.trim().isEmpty()) {
             throw new ValidationException("Email do passageiro é obrigatório.");
         }
@@ -151,7 +198,7 @@ public class RideService {
         return rideRepo.findByPassengerEmail(passengerEmail);
     }
 
-    public java.util.Collection<Ride> getRidesByStatus(Ride.RideStatus status) throws ValidationException {
+    public Collection<Ride> getRidesByStatus(Ride.RideStatus status) throws ValidationException {
         if (status == null) {
             throw new ValidationException("Status da corrida é obrigatório.");
         }
@@ -193,7 +240,7 @@ public class RideService {
         return pricingService.calculateEstimatedTime(origin, destination);
     }
 
-    public java.util.Set<String> getAvailableCategories() {
+    public Set<String> getAvailableCategories() {
         return pricingService.getAvailableCategories();
     }
 
@@ -210,7 +257,7 @@ public class RideService {
         return rideRepo.findByStatus(Ride.RideStatus.SOLICITADA)
                 .stream()
                 .filter(r -> r.getVehicleCategory().equalsIgnoreCase(category))
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     public void acceptRide(String rideId, String driverEmail) throws ValidationException, IOException {
