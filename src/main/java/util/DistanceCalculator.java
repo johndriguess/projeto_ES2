@@ -2,7 +2,6 @@ package util;
 
 public class DistanceCalculator {
     
-    private static final double AVERAGE_SPEED_KMH = 30.0;
     private static final int WAITING_TIME_MINUTES = 7;
     
     public static double calculateDistance(String origin, String destination) {
@@ -21,12 +20,12 @@ public class DistanceCalculator {
         return Math.round(baseDistance * 10.0) / 10.0;
     }
     
-    public static int calculateEstimatedTime(double distanceKm) {
-        if (distanceKm <= 0) {
+    public static int calculateEstimatedTime(double distanceKm, double averageSpeedKmH) {
+        if (distanceKm <= 0 || averageSpeedKmH <= 0) {
             return 0;
         }
         
-        double timeHours = distanceKm / AVERAGE_SPEED_KMH;
+        double timeHours = distanceKm / averageSpeedKmH;
         int timeMinutes = (int) Math.round(timeHours * 60) + WAITING_TIME_MINUTES;
         
         return Math.max(10, Math.min(120, timeMinutes));
@@ -34,13 +33,10 @@ public class DistanceCalculator {
     
     public static int calculateEstimatedTime(String origin, String destination) {
         double distance = calculateDistance(origin, destination);
-        return calculateEstimatedTime(distance);
+        double averageSpeedKmH = 30.0;
+        return calculateEstimatedTime(distance, averageSpeedKmH);
     }
-    
-    public static double getAverageSpeed() {
-        return AVERAGE_SPEED_KMH;
-    }
-    
+
     public static int getWaitingTime() {
         return WAITING_TIME_MINUTES;
     }

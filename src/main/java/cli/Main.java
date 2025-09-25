@@ -48,7 +48,8 @@ public class Main {
             System.out.println("8 - Listar minhas corridas");
             System.out.println("9 - Calcular preços (RF05)");
             System.out.println("10 - Ver Corridas Disponíveis (RF08)");
-            System.out.println("11 - Acompanhar Corrida (RF10)"); // Nova opção de menu
+            System.out.println("11 - Acompanhar Corrida (RF10)");
+            System.out.println("12 - Visualizar Rota (RF12)"); // Nova opção de menu
 
             System.out.println("0 - Sair");
             System.out.print("> ");
@@ -87,7 +88,10 @@ public class Main {
                         viewAvailableRides();
                         break;
                     case "11":
-                        trackRide(); // Chamada para o novo método
+                        trackRide();
+                        break;
+                    case "12":
+                        viewRoute(); // Chamada para o novo método
                         break;
                     case "0":
                         System.out.println("Saindo...");
@@ -108,8 +112,41 @@ public class Main {
             }
         }
     }
-    
-    // Método para acompanhar uma corrida (RF10)
+
+    private static void viewRoute() {
+        System.out.print("Digite o ID da corrida: ");
+        String rideId = sc.nextLine().trim();
+
+        System.out.print("Digite seu e-mail de motorista: ");
+        String driverEmail = sc.nextLine().trim();
+        
+        try {
+            User user = userRepo.findByEmail(driverEmail);
+            if (user == null || !(user instanceof Driver)) {
+                throw new ValidationException("Você precisa ser um motorista para visualizar uma rota.");
+            }
+            
+            Ride ride = rideService.getRideById(rideId);
+            
+            if (ride.getDriverId() == null || !ride.getDriverId().equals(user.getId())) {
+                throw new ValidationException("Você não é o motorista designado para esta corrida.");
+            }
+            
+            if (ride.getOptimizedRoute() == null || ride.getOptimizedRoute().isEmpty()) {
+                System.out.println("A rota otimizada ainda não está disponível.");
+                return;
+            }
+            
+            System.out.println("--- Rota Otimizada ---");
+            for (String step : ride.getOptimizedRoute()) {
+                System.out.println("- " + step);
+            }
+            System.out.println("----------------------");
+        } catch (ValidationException ve) {
+            System.out.println("Erro: " + ve.getMessage());
+        }
+    }
+
     private static void trackRide() {
         System.out.print("Digite o ID da corrida para acompanhar: ");
         String rideId = sc.nextLine().trim();
@@ -121,8 +158,6 @@ public class Main {
             System.out.println("Status: " + ride.getStatus().getDisplayName());
 
             if (ride.getStatus() == Ride.RideStatus.ACEITA || ride.getStatus() == Ride.RideStatus.EM_ANDAMENTO) {
-                // Aqui você pode adicionar lógica para mostrar a localização do motorista
-                // Por exemplo, uma mensagem simulando o rastreamento
                 if (ride.getDriverCurrentLocation() != null) {
                     System.out.println("Localização atual do motorista: " + ride.getDriverCurrentLocation().getAddress());
                 } else {

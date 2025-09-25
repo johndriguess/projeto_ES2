@@ -18,13 +18,19 @@ public class PricingService {
     private Map<String, Tariff> initializeTariffs() {
         Map<String, Tariff> tariffMap = new HashMap<>();
         
-        tariffMap.put("UberX", new Tariff("UberX", 2.50, 1.20, 0.30));
-        tariffMap.put("UberComfort", new Tariff("UberComfort", 3.00, 1.50, 0.35));
-        tariffMap.put("UberBlack", new Tariff("UberBlack", 4.00, 2.00, 0.50));
-        tariffMap.put("UberBag", new Tariff("UberBag", 2.80, 1.30, 0.32));
-        tariffMap.put("UberXL", new Tariff("UberXL", 3.50, 1.80, 0.40));
+        // Adicionando o argumento de velocidade para cada tarifa
+        tariffMap.put("UberX", new Tariff("UberX", 2.50, 1.20, 0.30, 30.0));
+        tariffMap.put("UberComfort", new Tariff("UberComfort", 3.00, 1.50, 0.35, 35.0));
+        tariffMap.put("UberBlack", new Tariff("UberBlack", 4.00, 2.00, 0.50, 40.0));
+        tariffMap.put("UberBag", new Tariff("UberBag", 2.80, 1.30, 0.32, 28.0));
+        tariffMap.put("UberXL", new Tariff("UberXL", 3.50, 1.80, 0.40, 32.0));
         
         return tariffMap;
+    }
+    
+    public double getSpeedForCategory(String category) throws ValidationException {
+        Tariff tariff = getTariffForCategory(category);
+        return tariff.getSpeedKmH();
     }
     
     public PricingInfo calculatePricing(String origin, String destination, String category) 
@@ -48,7 +54,7 @@ public class PricingService {
         }
         
         double distance = DistanceCalculator.calculateDistance(origin, destination);
-        int timeMinutes = DistanceCalculator.calculateEstimatedTime(distance);
+        int timeMinutes = DistanceCalculator.calculateEstimatedTime(distance, tariff.getSpeedKmH());
         
         double distancePrice = distance * tariff.getPricePerKm();
         double timePrice = timeMinutes * tariff.getPricePerMinute();
@@ -103,6 +109,8 @@ public class PricingService {
     }
     
     public int calculateEstimatedTime(String origin, String destination) {
-        return DistanceCalculator.calculateEstimatedTime(origin, destination);
+        // Usando a velocidade padrão para o cálculo inicial
+        double distance = DistanceCalculator.calculateDistance(origin, destination);
+        return DistanceCalculator.calculateEstimatedTime(distance, 30.0);
     }
 }
