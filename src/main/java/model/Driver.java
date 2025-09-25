@@ -54,6 +54,14 @@ public class Driver extends User implements Serializable {
         return "DRIVER";
     }
 
+    public void setVehicle(Vehicle vehicle) {
+        this.vehicles = new ArrayList<>();
+        if (vehicle != null) {
+            this.vehicles.add(vehicle);
+       }
+    }
+        
+        
     @Override
     public String toString() {
         return String.format("Driver[id=%s, name=%s, email=%s, phone=%s, doc=%s, vehicles=%s]",

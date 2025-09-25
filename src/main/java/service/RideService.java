@@ -5,12 +5,15 @@ import model.Location;
 import model.Passenger;
 import model.User;
 import model.PricingInfo;
+import model.Driver; // Importar a classe Driver
 import repo.RideRepository;
 import repo.UserRepository;
 import util.ValidationException;
+import util.DistanceCalculator; // Importar a classe DistanceCalculator
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Comparator;
 
 public class RideService {
     private final RideRepository rideRepo;
@@ -41,12 +44,12 @@ public class RideService {
         Location destination = new Location(destinationAddress);
 
         Ride ride = new Ride(user.getId(), passengerEmail, origin, destination);
-        ride.setVehicleCategory(vehicleCategory); // Set the category
+        ride.setVehicleCategory(vehicleCategory);
 
         rideRepo.add(ride);
 
-        // Notify drivers
-        notifyDriversByCategory(ride);
+        // Atribuir motorista mais próximo 
+        assignClosestDriver(ride);
 
         return ride;
     }
@@ -56,9 +59,38 @@ public class RideService {
         userRepo.findAll().stream()
                 .filter(u -> u instanceof model.Driver)
                 .map(u -> (model.Driver) u)
-                .filter(d -> d.getVehicle() != null && d.getVehicle().getCategory().getName().equalsIgnoreCase(ride.getVehicleCategory()))
+                .filter(d -> !d.getVehicles().isEmpty() && d.getVehicles().get(0).getCategory().equalsIgnoreCase(ride.getVehicleCategory()))
                 .forEach(d -> System.out.println("Notificando motorista " + d.getName() + " para a corrida de " + ride.getOrigin().getAddress()));
     }
+
+    public void assignClosestDriver(Ride ride) throws ValidationException, IOException {
+        List<Driver> eligibleDrivers = userRepo.findAll().stream()
+                .filter(u -> u instanceof Driver)
+                .map(u -> (Driver) u)
+                .filter(d -> !d.getVehicles().isEmpty() && d.getVehicles().get(0).getCategory().equalsIgnoreCase(ride.getVehicleCategory()))
+                .collect(Collectors.toList());
+
+        if (eligibleDrivers.isEmpty()) {
+            System.out.println("Nenhum motorista disponível na categoria " + ride.getVehicleCategory());
+            // A corrida permanece com o status SOLICITADA
+            return;
+        }
+
+        // Encontra o motorista mais próximo
+        Driver closestDriver = eligibleDrivers.stream()
+                .min(Comparator.comparingDouble(d -> DistanceCalculator.calculateDistance(ride.getOrigin().getAddress(), d.getVehicles().get(0).getPlate()))) // Usando a placa como substituto para localização
+                .orElse(null);
+
+        if (closestDriver != null) {
+            ride.setDriverId(closestDriver.getId());
+            ride.setStatus(Ride.RideStatus.ACEITA);
+            rideRepo.update(ride);
+            System.out.println("Corrida atribuída ao motorista: " + closestDriver.getName());
+        } else {
+            System.out.println("Não foi possível encontrar um motorista elegível.");
+        }
+    }
+
 
     private void validateRideRequest(String originAddress, String destinationAddress) throws ValidationException {
         if (originAddress == null || originAddress.trim().isEmpty()) {
@@ -155,10 +187,10 @@ public class RideService {
             throw new ValidationException("Apenas motoristas podem ver as corridas disponíveis.");
         }
         model.Driver driver = (model.Driver) user;
-        if (driver.getVehicle() == null) {
+        if (driver.getVehicles().isEmpty()) {
             throw new ValidationException("Você precisa ter um veículo para aceitar corridas.");
         }
-        String category = driver.getVehicle().getCategory().getName();
+        String category = driver.getVehicles().get(0).getCategory();
         return rideRepo.findByStatus(Ride.RideStatus.SOLICITADA)
                 .stream()
                 .filter(r -> r.getVehicleCategory().equalsIgnoreCase(category))
@@ -175,10 +207,10 @@ public class RideService {
             throw new ValidationException("Esta corrida não está mais disponível.");
         }
         model.Driver driver = (model.Driver) user;
-        if (driver.getVehicle() == null) {
+        if (driver.getVehicles().isEmpty()) {
             throw new ValidationException("Você precisa ter um veículo para aceitar corridas.");
         }
-        if (!ride.getVehicleCategory().equalsIgnoreCase(driver.getVehicle().getCategory().getName())) {
+        if (!ride.getVehicleCategory().equalsIgnoreCase(driver.getVehicles().get(0).getCategory())) {
             throw new ValidationException("Você não pode aceitar esta corrida com seu veículo atual.");
         }
         ride.setStatus(Ride.RideStatus.ACEITA);
