@@ -10,6 +10,7 @@ import java.util.*;
 public class PricingService {
     
     private final Map<String, Tariff> tariffs;
+    private double dynamicFareFactor = 1.0; 
     
     public PricingService() {
         this.tariffs = initializeTariffs();
@@ -17,8 +18,8 @@ public class PricingService {
     
     private Map<String, Tariff> initializeTariffs() {
         Map<String, Tariff> tariffMap = new HashMap<>();
-        
-        // Adicionando o argumento de velocidade para cada tarifa
+        //  mapeia uma tarifa por categoria
+        // tarifa base + preco/km + preco/min + velocidade media p calcular o tempo
         tariffMap.put("UberX", new Tariff("UberX", 2.50, 1.20, 0.30, 30.0));
         tariffMap.put("UberComfort", new Tariff("UberComfort", 3.00, 1.50, 0.35, 35.0));
         tariffMap.put("UberBlack", new Tariff("UberBlack", 4.00, 2.00, 0.50, 40.0));
@@ -27,12 +28,19 @@ public class PricingService {
         
         return tariffMap;
     }
-    
+
+    public void setDynamicFareFactor(double factor) {
+        if (factor > 0) {
+            this.dynamicFareFactor = factor;
+        }
+    }
+
     public double getSpeedForCategory(String category) throws ValidationException {
         Tariff tariff = getTariffForCategory(category);
         return tariff.getSpeedKmH();
     }
-    
+    // esse método é reponsável pelo calculo total da corrida
+    //tarifa base + distancia (valor /km) + tempo ( valor/min) + fator de ajuste
     public PricingInfo calculatePricing(String origin, String destination, String category) 
             throws ValidationException {
         
@@ -59,6 +67,9 @@ public class PricingService {
         double distancePrice = distance * tariff.getPricePerKm();
         double timePrice = timeMinutes * tariff.getPricePerMinute();
         double totalPrice = tariff.getBaseFare() + distancePrice + timePrice;
+        
+        // Aplica a tarifa dinâmica ao preço total
+        totalPrice = totalPrice * dynamicFareFactor;
         
         totalPrice = Math.round(totalPrice * 100.0) / 100.0;
         distancePrice = Math.round(distancePrice * 100.0) / 100.0;
@@ -109,7 +120,6 @@ public class PricingService {
     }
     
     public int calculateEstimatedTime(String origin, String destination) {
-        // Usando a velocidade padrão para o cálculo inicial
         double distance = DistanceCalculator.calculateDistance(origin, destination);
         return DistanceCalculator.calculateEstimatedTime(distance, 30.0);
     }

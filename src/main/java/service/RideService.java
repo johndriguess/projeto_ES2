@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 import java.util.Comparator;
 import java.util.Collection;
 import java.util.Set;
-import java.util.Arrays; // Importação adicionada
+import java.util.Arrays;
 
 public class RideService {
     private final RideRepository rideRepo;
@@ -28,6 +28,14 @@ public class RideService {
         this.userRepo = userRepo;
         this.pricingService = new PricingService();
     }
+
+    // Construtor para receber a instância de PricingService
+    public RideService(RideRepository rideRepo, UserRepository userRepo, PricingService pricingService) {
+        this.rideRepo = rideRepo;
+        this.userRepo = userRepo;
+        this.pricingService = pricingService;
+    }
+
 
     public Ride createRideRequest(String passengerEmail, String originAddress, String destinationAddress, String vehicleCategory)
             throws ValidationException, IOException {
@@ -222,12 +230,12 @@ public class RideService {
         rideRepo.update(ride);
     }
 
-    public PricingInfo calculatePricing(String origin, String destination, String category) 
+    public PricingInfo calculatePricing(String origin, String destination, String category)
             throws ValidationException {
         return pricingService.calculatePricing(origin, destination, category);
     }
 
-    public List<PricingInfo> calculateAllPricing(String origin, String destination) 
+    public List<PricingInfo> calculateAllPricing(String origin, String destination)
             throws ValidationException {
         return pricingService.calculateAllPricing(origin, destination);
     }

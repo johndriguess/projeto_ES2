@@ -5,6 +5,7 @@ import repo.VehicleRepository;
 import repo.RideRepository;
 import service.AuthService;
 import service.RideService;
+import service.PricingService; 
 import model.User;
 import model.Driver;
 import model.Passenger;
@@ -16,6 +17,9 @@ import util.ValidationException;
 import java.io.IOException;
 import java.util.InputMismatchException;
 import java.util.Scanner;
+import java.util.List;
+import java.util.Collection;
+import java.util.Set;
 
 public class Main {
     private static final String USER_DB = "users.db";
@@ -26,6 +30,7 @@ public class Main {
     private static RideRepository rideRepo;
     private static AuthService auth;
     private static RideService rideService;
+    private static PricingService pricingService; 
     private static Scanner sc;
 
     public static void main(String[] args) {
@@ -33,7 +38,8 @@ public class Main {
         vehicleRepo = new VehicleRepository(VEHICLE_DB);
         rideRepo = new RideRepository(RIDE_DB);
         auth = new AuthService(userRepo, vehicleRepo);
-        rideService = new RideService(rideRepo, userRepo);
+        pricingService = new PricingService(); 
+        rideService = new RideService(rideRepo, userRepo, pricingService); 
         sc = new Scanner(System.in);
         System.out.println("=== UberPB ===");
         while (true) {
@@ -46,10 +52,11 @@ public class Main {
             System.out.println("6 - Listar categorias de veículos (RF06)");
             System.out.println("7 - Solicitar Corrida (RF04 + RF05)");
             System.out.println("8 - Listar minhas corridas");
-            System.out.println("9 - Calcular preços (RF05)");
+            System.out.println("9 - Calcular preços (RF05 + RF14)");
             System.out.println("10 - Ver Corridas Disponíveis (RF08)");
             System.out.println("11 - Acompanhar Corrida (RF10)");
-            System.out.println("12 - Visualizar Rota (RF12)"); // Nova opção de menu
+            System.out.println("12 - Visualizar Rota (RF12)");
+            System.out.println("13 - Ajustar Tarifa Dinâmica (RF14)"); 
 
             System.out.println("0 - Sair");
             System.out.print("> ");
@@ -91,7 +98,10 @@ public class Main {
                         trackRide();
                         break;
                     case "12":
-                        viewRoute(); // Chamada para o novo método
+                        viewRoute();
+                        break;
+                    case "13":
+                        adjustDynamicFare(); 
                         break;
                     case "0":
                         System.out.println("Saindo...");
@@ -110,6 +120,17 @@ public class Main {
             } catch (Exception e) {
                 System.out.println("Erro inesperado: " + e.getMessage());
             }
+        }
+    }
+
+    private static void adjustDynamicFare() {
+        System.out.print("Digite o novo fator de tarifa dinâmica (ex: 1.5): ");
+        try {
+            double factor = Double.parseDouble(sc.nextLine().trim());
+            pricingService.setDynamicFareFactor(factor);
+            System.out.println("Fator de tarifa dinâmica ajustado para: " + factor);
+        } catch (NumberFormatException e) {
+            System.out.println("Entrada inválida. Por favor, digite um número válido.");
         }
     }
 
