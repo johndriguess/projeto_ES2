@@ -8,9 +8,14 @@ public class UserRepository {
     private final File storageFile;
     private Map<String, User> usersByEmail; // email -> User
 
-    public UserRepository(String pathToFile) {
-        this.storageFile = new File(pathToFile);
+    public UserRepository() {
+        this.storageFile = new File("users.date");
         load();
+    }
+
+    public UserRepository(File storageFile) {
+
+        this.storageFile = storageFile;
     }
 
     @SuppressWarnings("unchecked")
