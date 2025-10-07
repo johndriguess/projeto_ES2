@@ -17,6 +17,8 @@ import java.util.Comparator;
 import java.util.Collection;
 import java.util.Set;
 import java.util.Arrays;
+import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
 
 public class RideService {
     private final RideRepository rideRepo;
@@ -120,12 +122,12 @@ public class RideService {
 
         System.out.println("Localização do motorista atualizada para: " + newAddress);
     }
-    
+
     private void calculateAndUpdateETA(Ride ride) throws ValidationException {
         if (ride.getDriverCurrentLocation() == null || ride.getDestination() == null) {
             throw new ValidationException("Não foi possível calcular a ETA. Localização do motorista ou destino não definidos.");
         }
-        
+
         if (ride.getVehicleCategory() == null || ride.getVehicleCategory().isEmpty()) {
             throw new ValidationException("Não foi possível calcular a ETA. Categoria do veículo não definida.");
         }
@@ -133,14 +135,14 @@ public class RideService {
         double speedKmH = pricingService.getSpeedForCategory(ride.getVehicleCategory());
 
         double distance = DistanceCalculator.calculateDistance(
-            ride.getDriverCurrentLocation().getAddress(), 
-            ride.getDestination().getAddress()
+                ride.getDriverCurrentLocation().getAddress(),
+                ride.getDestination().getAddress()
         );
 
         int time = DistanceCalculator.calculateEstimatedTime(distance, speedKmH);
-        
+
         ride.setEstimatedTimeMinutes(time);
-        
+
         System.out.println("Estimativa de chegada atualizada para: " + time + " minutos.");
     }
 
@@ -148,16 +150,16 @@ public class RideService {
         if (ride.getDriverCurrentLocation() == null || ride.getDestination() == null) {
             throw new ValidationException("Não foi possível gerar a rota. Localização do motorista ou destino não definidos.");
         }
-        
+
         String startAddress = ride.getDriverCurrentLocation().getAddress();
         String endAddress = ride.getDestination().getAddress();
-        
+
         List<String> routeSteps = Arrays.asList(
-            "Saia de " + startAddress,
-            "Siga em frente por 2km.",
-            "Aguarde o semáforo na Rua Central.",
-            "Vire à direita na Rua Principal.",
-            "Você chegou ao seu destino: " + endAddress
+                "Saia de " + startAddress,
+                "Siga em frente por 2km.",
+                "Aguarde o semáforo na Rua Central.",
+                "Vire à direita na Rua Principal.",
+                "Você chegou ao seu destino: " + endAddress
         );
 
         ride.setOptimizedRoute(routeSteps);
@@ -167,19 +169,19 @@ public class RideService {
         if (originAddress == null || originAddress.trim().isEmpty()) {
             throw new ValidationException("Endereço de origem é obrigatório.");
         }
-        
+
         if (destinationAddress == null || destinationAddress.trim().isEmpty()) {
             throw new ValidationException("Endereço de destino é obrigatório.");
         }
-        
+
         if (originAddress.trim().equalsIgnoreCase(destinationAddress.trim())) {
             throw new ValidationException("Origem e destino não podem ser iguais.");
         }
-        
+
         if (originAddress.trim().length() < 5) {
             throw new ValidationException("Endereço de origem deve ter pelo menos 5 caracteres.");
         }
-        
+
         if (destinationAddress.trim().length() < 5) {
             throw new ValidationException("Endereço de destino deve ter pelo menos 5 caracteres.");
         }
@@ -189,12 +191,12 @@ public class RideService {
         if (rideId == null || rideId.trim().isEmpty()) {
             throw new ValidationException("ID da corrida é obrigatório.");
         }
-        
+
         Ride ride = rideRepo.findById(rideId);
         if (ride == null) {
             throw new ValidationException("Corrida não encontrada.");
         }
-        
+
         return ride;
     }
 
@@ -202,7 +204,7 @@ public class RideService {
         if (passengerEmail == null || passengerEmail.trim().isEmpty()) {
             throw new ValidationException("Email do passageiro é obrigatório.");
         }
-        
+
         return rideRepo.findByPassengerEmail(passengerEmail);
     }
 
@@ -210,7 +212,7 @@ public class RideService {
         if (status == null) {
             throw new ValidationException("Status da corrida é obrigatório.");
         }
-        
+
         return rideRepo.findByStatus(status);
     }
 
@@ -224,7 +226,7 @@ public class RideService {
         if (vehicleCategory == null || vehicleCategory.trim().isEmpty()) {
             throw new ValidationException("Categoria do veículo é obrigatória.");
         }
-        
+
         Ride ride = getRideById(rideId);
         ride.setVehicleCategory(vehicleCategory);
         rideRepo.update(ride);
@@ -299,5 +301,56 @@ public class RideService {
             throw new ValidationException("Esta corrida não está mais disponível.");
         }
         System.out.println("Você recusou a corrida. Ela permanecerá disponível para outros motoristas.");
+    }
+
+    public void emitReceiptForRide(String rideId, String paymentMethod) {
+        try {
+            Ride ride = getRideById(rideId);
+
+            // Formatação de data/hora
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+            StringBuilder receipt = new StringBuilder();
+            receipt.append("\n========================================\n");
+            receipt.append("            RECIBO DE CORRIDA           \n");
+            receipt.append("========================================\n");
+            receipt.append("Passageiro: ").append(ride.getPassengerEmail()).append("\n");
+            if (ride.getDriverId() != null) {
+                User driver = userRepo.findByEmail(ride.getDriverId());
+                receipt.append("Motorista: ").append(driver.getName()).append("\n");
+            } else {
+                receipt.append("Motorista: Ainda não atribuído\n");
+            }
+            receipt.append("----------------------------------------\n");
+            receipt.append("Origem: ").append(ride.getOrigin().getAddress()).append("\n");
+            receipt.append("Destino: ").append(ride.getDestination().getAddress()).append("\n");
+            receipt.append("Categoria do veículo: ").append(ride.getVehicleCategory() != null ? ride.getVehicleCategory() : "Não definida").append("\n");
+            receipt.append("Status da corrida: ").append(ride.getStatus().name()).append("\n");
+
+            // Valor da corrida
+            try {
+                PricingInfo pricing = calculatePricing(ride.getOrigin().getAddress(), ride.getDestination().getAddress(), ride.getVehicleCategory());
+                receipt.append("Valor: R$ ").append(String.format("%.2f", pricing.getTimePrice())).append("\n");
+            } catch (ValidationException e) {
+                receipt.append("Valor: Não calculado\n");
+            }
+
+            // Horário
+            receipt.append("Data/Hora da solicitação: ").append(ride.getRequestTime() != null ? ride.getRequestTime().format(formatter) : "Não registrado").append("\n");
+            int estimated = ride.getEstimatedTimeMinutes();
+            receipt.append("Horário estimado de chegada: ")
+                    .append(estimated > 0 ? estimated + " min" : "Não calculado")
+                    .append("\n");
+            receipt.append("Forma de pagamento: ").append(paymentMethod != null ? paymentMethod : "Não informada").append("\n");
+
+            receipt.append("----------------------------------------\n");
+            receipt.append("         OBRIGADO POR USAR NOSSO APP!   \n");
+            receipt.append("========================================\n");
+
+            System.out.println(receipt.toString());
+
+        } catch (ValidationException e) {
+            System.out.println("Erro ao gerar recibo: " + e.getMessage());
+        }
     }
 }
