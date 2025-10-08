@@ -366,14 +366,24 @@ public class Main {
             }
             System.out.print("Escolha uma opção (1-" + pricingList.size() + "): ");
             int optionIndex = Integer.parseInt(sc.nextLine().trim()) - 1;
+
             if (optionIndex >= 0 && optionIndex < pricingList.size()) {
+                System.out.println("\n--- Formas de Pagamento (RF13) ---");
+                for (model.PaymentMethod pm : model.PaymentMethod.values()) {
+                    System.out.println((pm.ordinal() + 1) + " - " + pm.getDisplayName());
+                }
+                System.out.print("Escolha uma forma de pagamento: ");
+                int paymentOption = Integer.parseInt(sc.nextLine().trim()) - 1;
+                model.PaymentMethod selectedPaymentMethod = model.PaymentMethod.values()[paymentOption];
+
                 PricingInfo selectedPricing = pricingList.get(optionIndex);
-                Ride ride = rideService.createRideRequest(email, origin, destination, selectedPricing.getCategory());
+                Ride ride = rideService.createRideRequest(email, origin, destination, selectedPricing.getCategory(), selectedPaymentMethod);
                 System.out.println("\n=== Corrida Solicitada com Sucesso! ===");
                 System.out.println("ID da corrida: " + ride.getId());
                 System.out.println("Categoria escolhida: " + selectedPricing.getCategory());
                 System.out.println("Preço estimado: " + selectedPricing.getFormattedPrice());
                 System.out.println("Tempo estimado: " + selectedPricing.getFormattedTime());
+                System.out.println("Forma de Pagamento: " + selectedPaymentMethod.getDisplayName());
                 System.out.println("Status: " + ride.getStatus().getDisplayName());
             } else {
                 System.out.println("Opção inválida.");

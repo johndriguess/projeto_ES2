@@ -24,11 +24,13 @@ public class RideService {
     private final RideRepository rideRepo;
     private final UserRepository userRepo;
     private final PricingService pricingService;
+    private final PaymentService paymentService; // RF13
 
     public RideService(RideRepository rideRepo, UserRepository userRepo) {
         this.rideRepo = rideRepo;
         this.userRepo = userRepo;
         this.pricingService = new PricingService();
+        this.paymentService = new PaymentService(); // RF13
     }
 
     // Construtor para receber a instância de PricingService
@@ -36,10 +38,11 @@ public class RideService {
         this.rideRepo = rideRepo;
         this.userRepo = userRepo;
         this.pricingService = pricingService;
+        this.paymentService = new PaymentService(); // RF13
     }
 
 
-    public Ride createRideRequest(String passengerEmail, String originAddress, String destinationAddress, String vehicleCategory)
+    public Ride createRideRequest(String passengerEmail, String originAddress, String destinationAddress, String vehicleCategory, model.PaymentMethod paymentMethod)
             throws ValidationException, IOException {
 
         User user = userRepo.findByEmail(passengerEmail);
@@ -58,12 +61,39 @@ public class RideService {
 
         Ride ride = new Ride(user.getId(), passengerEmail, origin, destination);
         ride.setVehicleCategory(vehicleCategory);
+        ride.setPaymentMethod(paymentMethod); // RF13
 
         rideRepo.add(ride);
 
         assignClosestDriver(ride);
 
         return ride;
+    }
+    
+    // RF13
+    public void completeRide(String rideId) throws ValidationException, IOException {
+        Ride ride = getRideById(rideId);
+
+        if (ride.getStatus() != Ride.RideStatus.ACEITA && ride.getStatus() != Ride.RideStatus.EM_ANDAMENTO) {
+            throw new ValidationException("A corrida não pode ser finalizada neste status.");
+        }
+
+        // Calcula o preço final
+        PricingInfo pricing = calculatePricing(ride.getOrigin().getAddress(), ride.getDestination().getAddress(), ride.getVehicleCategory());
+        double finalPrice = pricing.getTimePrice();
+
+        // Processa o pagamento
+        boolean paymentSuccess = paymentService.processPayment(finalPrice, ride.getPaymentMethod());
+
+        if (paymentSuccess) {
+            ride.setStatus(Ride.RideStatus.FINALIZADA);
+            rideRepo.update(ride);
+            System.out.println("Corrida finalizada com sucesso! Pagamento processado.");
+            // Emite o recibo automaticamente
+            emitReceiptForRide(rideId, ride.getPaymentMethod().getDisplayName());
+        } else {
+            System.out.println("Falha no pagamento. A corrida não foi finalizada. Tente novamente.");
+        }
     }
 
     public void notifyDriversByCategory(Ride ride) {
