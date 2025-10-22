@@ -3,10 +3,12 @@ package cli;
 import repo.UserRepository;
 import repo.VehicleRepository;
 import repo.RideRepository;
+import repo.RideHistoryRepository;
 import service.AuthService;
 import service.RideService;
 import service.PricingService;
-import service.RatingService; 
+import service.RatingService;
+import service.RideHistoryService; 
 import model.User;
 import model.Driver;
 import model.Passenger;
@@ -27,23 +29,29 @@ public class Main {
     private static final String USER_DB = "users.db";
     private static final String VEHICLE_DB = "vehicles.db";
     private static final String RIDE_DB = "rides.db";
+    private static final String HISTORY_DB = "ride_history.db";
     private static UserRepository userRepo;
     private static VehicleRepository vehicleRepo;
     private static RideRepository rideRepo;
+    private static RideHistoryRepository historyRepo;
     private static AuthService auth;
     private static RideService rideService;
     private static PricingService pricingService;
-    private static RatingService ratingService; 
+    private static RatingService ratingService;
+    private static RideHistoryService historyService; 
     private static Scanner sc;
 
     public static void main(String[] args) {
         userRepo = new UserRepository();
         vehicleRepo = new VehicleRepository(VEHICLE_DB);
         rideRepo = new RideRepository(RIDE_DB);
+        historyRepo = new RideHistoryRepository(HISTORY_DB);
         auth = new AuthService(userRepo, vehicleRepo);
         pricingService = new PricingService();
         rideService = new RideService(rideRepo, userRepo, pricingService);
-        ratingService = new RatingService(userRepo, rideRepo); 
+        rideService.setHistoryRepository(historyRepo);
+        ratingService = new RatingService(userRepo, rideRepo);
+        historyService = new RideHistoryService(historyRepo, userRepo); 
         sc = new Scanner(System.in);
 
         System.out.println("=== UberPB ===");
@@ -62,7 +70,8 @@ public class Main {
             System.out.println("11 - Visualizar Rota (RF12)");
             System.out.println("12 - Ajustar Tarifa Dinâmica (RF14)");
             System.out.println("13 - Gerar / Enviar / Visualizar Recibo (RF15)");
-            System.out.println("14 - Avaliar uma Corrida (RF16)"); 
+            System.out.println("14 - Avaliar uma Corrida (RF16)");
+            System.out.println("15 - Histórico de Corridas (RF18)");
             System.out.println("0 - Sair");
             System.out.print("> ");
             String opt = sc.nextLine().trim();
@@ -82,7 +91,8 @@ public class Main {
                     case "11": viewRoute(); break;
                     case "12": adjustDynamicFare(); break;
                     case "13": generateOrViewReceipt(); break;
-                    case "14": rateRide(); break; 
+                    case "14": rateRide(); break;
+                    case "15": showRideHistory(); break;
                     case "0":
                         System.out.println("Saindo...");
                         sc.close();
@@ -435,5 +445,135 @@ public class Main {
         } catch (ValidationException ve) {
             System.out.println("Erro: " + ve.getMessage());
         }
+    }
+
+    private static void showRideHistory() {
+        System.out.println("=== Histórico de Corridas (RF18) ===");
+        System.out.println("Escolha uma opção:");
+        System.out.println("1 - Ver histórico por passageiro");
+        System.out.println("2 - Ver histórico por motorista");
+        System.out.println("3 - Ver histórico por categoria");
+        System.out.println("4 - Ver histórico por passageiro e categoria");
+        System.out.println("5 - Ver histórico por período");
+        System.out.println("6 - Ver estatísticas por categoria");
+        System.out.println("7 - Ver detalhes de um histórico específico");
+        System.out.println("0 - Voltar");
+        System.out.print("> ");
+        
+        String choice = sc.nextLine().trim();
+        
+        try {
+            switch (choice) {
+                case "1": showHistoryByPassenger(); break;
+                case "2": showHistoryByDriver(); break;
+                case "3": showHistoryByCategory(); break;
+                case "4": showHistoryByPassengerAndCategory(); break;
+                case "5": showHistoryByDateRange(); break;
+                case "6": showCategoryStatistics(); break;
+                case "7": showHistoryDetails(); break;
+                case "0": return;
+                default: System.out.println("Opção inválida.");
+            }
+        } catch (ValidationException ve) {
+            System.out.println("Erro: " + ve.getMessage());
+        } catch (Exception e) {
+            System.out.println("Erro inesperado: " + e.getMessage());
+        }
+    }
+
+    private static void showHistoryByPassenger() throws ValidationException {
+        System.out.print("Digite o email do passageiro: ");
+        String email = sc.nextLine().trim();
+        
+        List<model.RideHistory> history = historyService.getHistoryByPassenger(email);
+        System.out.println(historyService.formatHistoryList(history));
+    }
+
+    private static void showHistoryByDriver() throws ValidationException {
+        System.out.print("Digite o email do motorista: ");
+        String email = sc.nextLine().trim();
+        
+        List<model.RideHistory> history = historyService.getHistoryByDriver(email);
+        System.out.println(historyService.formatHistoryList(history));
+    }
+
+    private static void showHistoryByCategory() throws ValidationException {
+        System.out.println("Categorias disponíveis:");
+        List<String> categories = historyService.getAvailableCategories();
+        for (int i = 0; i < categories.size(); i++) {
+            System.out.println((i + 1) + " - " + categories.get(i));
+        }
+        
+        System.out.print("Escolha uma categoria (número): ");
+        try {
+            int choice = Integer.parseInt(sc.nextLine().trim()) - 1;
+            if (choice >= 0 && choice < categories.size()) {
+                String category = categories.get(choice);
+                List<model.RideHistory> history = historyService.getHistoryByCategory(category);
+                System.out.println(historyService.formatHistoryList(history));
+            } else {
+                System.out.println("Opção inválida.");
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Entrada inválida. Digite um número.");
+        }
+    }
+
+    private static void showHistoryByPassengerAndCategory() throws ValidationException {
+        System.out.print("Digite o email do passageiro: ");
+        String email = sc.nextLine().trim();
+        
+        System.out.println("Categorias disponíveis:");
+        List<String> categories = historyService.getAvailableCategories();
+        for (int i = 0; i < categories.size(); i++) {
+            System.out.println((i + 1) + " - " + categories.get(i));
+        }
+        
+        System.out.print("Escolha uma categoria (número): ");
+        try {
+            int choice = Integer.parseInt(sc.nextLine().trim()) - 1;
+            if (choice >= 0 && choice < categories.size()) {
+                String category = categories.get(choice);
+                List<model.RideHistory> history = historyService.getHistoryByPassengerAndCategory(email, category);
+                System.out.println(historyService.formatHistoryList(history));
+            } else {
+                System.out.println("Opção inválida.");
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Entrada inválida. Digite um número.");
+        }
+    }
+
+    private static void showHistoryByDateRange() throws ValidationException {
+        System.out.print("Digite a data de início (dd/MM/yyyy): ");
+        String startDateStr = sc.nextLine().trim();
+        
+        System.out.print("Digite a data de fim (dd/MM/yyyy): ");
+        String endDateStr = sc.nextLine().trim();
+        
+        try {
+            java.time.LocalDate startDate = java.time.LocalDate.parse(startDateStr, java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            java.time.LocalDate endDate = java.time.LocalDate.parse(endDateStr, java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            
+            java.time.LocalDateTime startDateTime = startDate.atStartOfDay();
+            java.time.LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
+            
+            List<model.RideHistory> history = historyService.getHistoryByDateRange(startDateTime, endDateTime);
+            System.out.println(historyService.formatHistoryList(history));
+        } catch (java.time.format.DateTimeParseException e) {
+            System.out.println("Formato de data inválido. Use dd/MM/yyyy.");
+        }
+    }
+
+    private static void showCategoryStatistics() {
+        System.out.println(historyService.formatCategoryStatistics());
+    }
+
+    private static void showHistoryDetails() throws ValidationException {
+        System.out.print("Digite o ID do histórico: ");
+        String historyId = sc.nextLine().trim();
+        
+        model.RideHistory history = historyService.getHistoryById(historyId);
+        System.out.println(history.getDetailedInfo());
     }
 }

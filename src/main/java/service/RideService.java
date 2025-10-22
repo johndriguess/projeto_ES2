@@ -2,6 +2,7 @@ package service;
 
 import repo.RideRepository;
 import repo.UserRepository;
+import repo.RideHistoryRepository;
 import model.Ride;
 import model.User;
 import model.Driver;
@@ -26,13 +27,18 @@ public class RideService {
     private final RideRepository rideRepo;
     private final UserRepository userRepo;
     private final PricingService pricingService;
-    private final DigitalReceiptService digitalReceiptService; 
+    private final DigitalReceiptService digitalReceiptService;
+    private RideHistoryRepository historyRepo;
     
     public RideService(RideRepository rideRepo, UserRepository userRepo, PricingService pricingService) {
         this.rideRepo = rideRepo;
         this.userRepo = userRepo;
         this.pricingService = pricingService;
         this.digitalReceiptService = new DigitalReceiptService(); 
+    }
+    
+    public void setHistoryRepository(RideHistoryRepository historyRepo) {
+        this.historyRepo = historyRepo;
     }
 
     public Ride createRideRequest(String passengerEmail, String originAddr, String destAddr, String categoryName, PaymentMethod paymentMethod) throws ValidationException, IOException {
@@ -207,5 +213,16 @@ public class RideService {
         Receipt receipt = digitalReceiptService.generateReceipt(ride, passenger, driver, ridePricing, paymentMethod);
         
         digitalReceiptService.sendReceiptToPassenger(receipt);
+        
+        // Adicionar ao histórico de corridas
+        if (historyRepo != null) {
+            try {
+                model.RideHistory history = new model.RideHistory(ride, driver != null ? driver.getName() : "Não informado", 
+                        ridePricing.getPrice(), paymentMethod);
+                historyRepo.add(history);
+            } catch (IOException e) {
+                System.err.println("Erro ao adicionar corrida ao histórico: " + e.getMessage());
+            }
+        }
     }
 }
