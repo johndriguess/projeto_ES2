@@ -1,12 +1,13 @@
 package repo;
 
+import model.Driver;
 import model.User;
 import java.io.*;
 import java.util.*;
 
 public class UserRepository {
     private final File storageFile;
-    private Map<String, User> usersByEmail; // email -> User
+    private Map<String, User> usersByEmail; 
 
     public UserRepository() {
         this.storageFile = new File("users.date");
@@ -14,8 +15,8 @@ public class UserRepository {
     }
 
     public UserRepository(File storageFile) {
-
         this.storageFile = storageFile;
+        load(); 
     }
 
     @SuppressWarnings("unchecked")
@@ -33,7 +34,7 @@ public class UserRepository {
         }
     }
 
-    private void save() throws IOException {
+    public void save() throws IOException {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(storageFile))) {
             oos.writeObject(usersByEmail);
         }
@@ -50,6 +51,26 @@ public class UserRepository {
 
     public User findByEmail(String email) {
         return usersByEmail.get(email.toLowerCase());
+    }
+
+    public User findById(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            return null;
+        }
+        for (User user : usersByEmail.values()) {
+            if (id.equals(user.getId())) {
+                return user;
+            }
+        }
+        return null; 
+    }
+    
+    public synchronized void update(User user) throws IOException {
+        if (user == null || !existsByEmail(user.getEmail())) {
+            return; 
+        }
+        usersByEmail.put(user.getEmail(), user);
+        save(); 
     }
 
     public Collection<User> findAll() {

@@ -6,6 +6,7 @@ import repo.RideRepository;
 import service.AuthService;
 import service.RideService;
 import service.PricingService;
+import service.RatingService; 
 import model.User;
 import model.Driver;
 import model.Passenger;
@@ -32,6 +33,7 @@ public class Main {
     private static AuthService auth;
     private static RideService rideService;
     private static PricingService pricingService;
+    private static RatingService ratingService; 
     private static Scanner sc;
 
     public static void main(String[] args) {
@@ -41,6 +43,7 @@ public class Main {
         auth = new AuthService(userRepo, vehicleRepo);
         pricingService = new PricingService();
         rideService = new RideService(rideRepo, userRepo, pricingService);
+        ratingService = new RatingService(userRepo, rideRepo); 
         sc = new Scanner(System.in);
 
         System.out.println("=== UberPB ===");
@@ -60,6 +63,7 @@ public class Main {
             System.out.println("12 - Visualizar Rota (RF12)");
             System.out.println("13 - Ajustar Tarifa Dinâmica (RF14)");
             System.out.println("14 - Gerar / Enviar / Visualizar Recibo (RF15)");
+            System.out.println("15 - Avaliar uma Corrida (RF16)"); 
             System.out.println("0 - Sair");
             System.out.print("> ");
             String opt = sc.nextLine().trim();
@@ -80,6 +84,7 @@ public class Main {
                     case "12": viewRoute(); break;
                     case "13": adjustDynamicFare(); break;
                     case "14": generateOrViewReceipt(); break;
+                    case "15": rateRide(); break; 
                     case "0":
                         System.out.println("Saindo...");
                         sc.close();
@@ -100,7 +105,51 @@ public class Main {
         }
     }
 
-    // === RF15: Recibo Eletrônico ===
+    private static void rateRide() throws ValidationException, IOException {
+        System.out.println("=== Avaliar Corrida (RF16) ===");
+        System.out.print("Digite o ID da corrida que deseja avaliar: ");
+        String rideId = sc.nextLine().trim();
+        
+        Ride ride = rideRepo.findById(rideId);
+        if (ride == null) {
+            System.out.println("Erro: Corrida com ID " + rideId + " não encontrada.");
+            return;
+        }
+
+        System.out.print("Digite seu email para identificação: ");
+        String email = sc.nextLine().trim();
+        User user = userRepo.findByEmail(email);
+        if (user == null) {
+            System.out.println("Erro: Usuário com email " + email + " não encontrado.");
+            return;
+        }
+
+        int rating = 0;
+        while (rating < 1 || rating > 5) {
+            System.out.print("Qual sua nota (de 1 a 5)? ");
+            try {
+                rating = Integer.parseInt(sc.nextLine().trim());
+                if (rating < 1 || rating > 5) {
+                    System.out.println("Nota inválida. Digite um valor entre 1 e 5.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Entrada inválida. Digite um número.");
+            }
+        }
+
+        if (user instanceof Passenger && user.getId().equals(ride.getPassengerId())) {
+            ratingService.rateDriver(ride, rating);
+            System.out.println("Motorista avaliado com sucesso!");
+
+        } else if (user instanceof Driver && user.getId().equals(ride.getDriverId())) {
+            ratingService.ratePassenger(ride, rating);
+            System.out.println("Passageiro avaliado com sucesso!");
+
+        } else {
+            System.out.println("Erro: Você não é o passageiro ou o motorista desta corrida.");
+        }
+    }
+
     private static void generateOrViewReceipt() {
         System.out.println("=== Gerar / Enviar / Visualizar Recibo (RF15) ===");
         System.out.print("Digite o ID da corrida: ");
@@ -110,10 +159,8 @@ public class Main {
         if (paymentMethod.isEmpty()) paymentMethod = "Não informado";
 
         try {
-            // Emite o recibo detalhado
             rideService.emitReceiptForRide(rideId, paymentMethod);
 
-            // Pasta onde os recibos são salvos
             String receiptsFolder = "receipts";
             File folder = new File(receiptsFolder);
             if (!folder.exists()) {
@@ -121,7 +168,6 @@ public class Main {
                 return;
             }
 
-            // listar arquivos relacionados à corrida
             File[] files = folder.listFiles((dir, name) -> name.contains(rideId));
             if (files == null || files.length == 0) {
                 System.out.println("Nenhum arquivo de recibo encontrado para a corrida " + rideId);

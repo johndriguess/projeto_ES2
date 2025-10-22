@@ -41,6 +41,9 @@ public class Ride implements Serializable {
     private List<String> optimizedRoute;
     private PaymentMethod paymentMethod;
     
+    private boolean passengerHasRated = false;
+    private boolean driverHasRated = false;
+    
     public Ride(String passengerId, String passengerEmail, Location origin, Location destination) {
         this.id = UUID.randomUUID().toString();
         this.passengerId = passengerId;
@@ -130,6 +133,22 @@ public class Ride implements Serializable {
 
     public void setPaymentMethod(PaymentMethod paymentMethod) {
         this.paymentMethod = paymentMethod;
+    }
+    
+    public boolean hasPassengerRated() {
+        return passengerHasRated;
+    }
+
+    public void setPassengerHasRated(boolean passengerHasRated) {
+        this.passengerHasRated = passengerHasRated;
+    }
+
+    public boolean hasDriverRated() {
+        return driverHasRated;
+    }
+
+    public void setDriverHasRated(boolean driverHasRated) {
+        this.driverHasRated = driverHasRated;
     }
     
     @Override

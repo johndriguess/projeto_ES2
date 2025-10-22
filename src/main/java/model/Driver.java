@@ -1,70 +1,53 @@
 package model;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Driver extends User implements Serializable {
     private static final long serialVersionUID = 1L;
-
-    private String documentNumber;
-    private List<Vehicle> vehicles;
     
-    public Driver(String name, String email, String phone, String password, String documentNumber) {
+    private String licenseDoc;
+    private Vehicle vehicle; 
+    private Location currentLocation; 
+    private boolean isAvailable;
+
+    public Driver(String name, String email, String phone, String password, String licenseDoc, Vehicle vehicle) {
         super(name, email, phone, password);
-        this.documentNumber = documentNumber.trim();
-        this.vehicles = new ArrayList<>(); 
-    }
-    
-    //  usado para o cadastro com veículo
-    public Driver(String name, String email, String phone, String password, String documentNumber, Vehicle vehicle) {
-        this(name, email, phone, password, documentNumber);
-        if (vehicle != null) {
-            this.vehicles.add(vehicle);
-        }
-    }
-    
-    // Construtor auxiliar para desserialização
-    public Driver(String id, String name, String email, String phone, String password, String documentNumber) {
-        super(id, name, email, phone, password);
-        this.documentNumber = documentNumber.trim();
-        this.vehicles = new ArrayList<>();
+        this.licenseDoc = licenseDoc;
+        this.vehicle = vehicle;
+        this.isAvailable = true; 
+        this.currentLocation = new Location("Garagem"); 
     }
 
-    public String getDocumentNumber() { return documentNumber; }
+    @Override
+    public String getRole() {
+        return "Motorista";
+    }
     
-    public List<Vehicle> getVehicles() { 
-        if (vehicles == null) {
-            vehicles = new ArrayList<>();
-        }
-        return vehicles; 
+    public String getLicenseDoc() {
+        return licenseDoc;
     }
 
     public void addVehicle(Vehicle vehicle) {
-        if (vehicles == null) {
-            vehicles = new ArrayList<>();
-        }
-        if (vehicle != null) {
-            this.vehicles.add(vehicle);
-        }
-    }
-    
-    @Override
-    public String getRole() {
-        return "DRIVER";
+        this.vehicle = vehicle;
     }
 
-    public void setVehicle(Vehicle vehicle) {
-        this.vehicles = new ArrayList<>();
-        if (vehicle != null) {
-            this.vehicles.add(vehicle);
-       }
+    public boolean isAvailable() {
+        return isAvailable;
     }
-        
-        
-    @Override
-    public String toString() {
-        return String.format("Driver[id=%s, name=%s, email=%s, phone=%s, doc=%s, vehicles=%s]",
-                id, name, email, phone, documentNumber, vehicles.toString());
+
+    public void setAvailable(boolean available) {
+        isAvailable = available;
+    }
+
+    public void setCurrentLocation(Location currentLocation) {
+        this.currentLocation = currentLocation;
+    }
+    
+    public Vehicle getVehicle() {
+        return vehicle;
+    }
+
+    public Location getCurrentLocation() {
+        return currentLocation;
     }
 }
