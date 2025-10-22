@@ -55,15 +55,14 @@ public class Main {
             System.out.println("4 - Fazer Login");
             System.out.println("5 - Listar usuários");
             System.out.println("6 - Listar categorias de veículos (RF06)");
-            System.out.println("7 - Solicitar Corrida (RF04 + RF05)");
+            System.out.println("7 - Solicitar Corrida (RF04 + RF05 + RF17)");
             System.out.println("8 - Listar minhas corridas");
             System.out.println("9 - Calcular preços (RF05 + RF14)");
-            System.out.println("10 - Ver Corridas Disponíveis (RF08)");
-            System.out.println("11 - Acompanhar Corrida (RF10)");
-            System.out.println("12 - Visualizar Rota (RF12)");
-            System.out.println("13 - Ajustar Tarifa Dinâmica (RF14)");
-            System.out.println("14 - Gerar / Enviar / Visualizar Recibo (RF15)");
-            System.out.println("15 - Avaliar uma Corrida (RF16)"); 
+            System.out.println("10 - Acompanhar Corrida (RF10)");
+            System.out.println("11 - Visualizar Rota (RF12)");
+            System.out.println("12 - Ajustar Tarifa Dinâmica (RF14)");
+            System.out.println("13 - Gerar / Enviar / Visualizar Recibo (RF15)");
+            System.out.println("14 - Avaliar uma Corrida (RF16)"); 
             System.out.println("0 - Sair");
             System.out.print("> ");
             String opt = sc.nextLine().trim();
@@ -79,12 +78,11 @@ public class Main {
                     case "7": requestRideWithPricing(); break;
                     case "8": listMyRides(); break;
                     case "9": calculatePricing(); break;
-                    case "10": viewAvailableRides(); break;
-                    case "11": trackRide(); break;
-                    case "12": viewRoute(); break;
-                    case "13": adjustDynamicFare(); break;
-                    case "14": generateOrViewReceipt(); break;
-                    case "15": rateRide(); break; 
+                    case "10": trackRide(); break;
+                    case "11": viewRoute(); break;
+                    case "12": adjustDynamicFare(); break;
+                    case "13": generateOrViewReceipt(); break;
+                    case "14": rateRide(); break; 
                     case "0":
                         System.out.println("Saindo...");
                         sc.close();
@@ -436,36 +434,6 @@ public class Main {
             }
         } catch (ValidationException ve) {
             System.out.println("Erro: " + ve.getMessage());
-        }
-    }
-
-    private static void viewAvailableRides() throws ValidationException, IOException {
-        System.out.print("Email do motorista: ");
-        String email = sc.nextLine();
-        User user = userRepo.findByEmail(email);
-        if (user == null || !(user instanceof Driver)) {
-            System.out.println("Apenas motoristas podem ver as corridas disponíveis.");
-            return;
-        }
-        List<Ride> pendingRides = rideService.getPendingRidesForDriver(email);
-        if (pendingRides.isEmpty()) {
-            System.out.println("Nenhuma corrida disponível para você no momento.");
-            return;
-        }
-        System.out.println("--- Corridas Disponíveis ---");
-        for (Ride ride : pendingRides) System.out.println(ride);
-        System.out.println("--------------------------");
-        System.out.print("Digite o ID da corrida que deseja aceitar ou 'cancelar' para voltar: ");
-        String rideId = sc.nextLine();
-        if (rideId.equalsIgnoreCase("cancelar")) return;
-        System.out.print("Você deseja (A)ceitar ou (R)ecusar esta corrida? ");
-        String choice = sc.nextLine();
-        if (choice.equalsIgnoreCase("A")) {
-            rideService.acceptRide(rideId, email);
-        } else if (choice.equalsIgnoreCase("R")) {
-            rideService.refuseRide(rideId, email);
-        } else {
-            System.out.println("Opção inválida.");
         }
     }
 }
