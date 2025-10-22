@@ -24,8 +24,6 @@ public class AuthService {
         this.validator = new Validator(userRepo); 
     }
 
-
-
     public Passenger registerPassenger(String name, String email, String phone, String password) throws ValidationException, IOException {
         validator.validateCommon(name, email, phone);
         validator.validatePassword(password);
@@ -35,8 +33,8 @@ public class AuthService {
     }
 
     public Driver registerDriver(String name, String email, String phone, String password,
-                                 String documentNumber, String vehiclePlate,
-                                 String vehicleModel, int vehicleYear, String vehicleColor)
+                                   String documentNumber, String vehiclePlate,
+                                   String vehicleModel, int vehicleYear, String vehicleColor)
             throws ValidationException, IOException {
         validator.validateCommon(name, email, phone);
         validator.validatePassword(password);
@@ -58,7 +56,7 @@ public class AuthService {
     }
 
     public Driver addVehicleToDriver(String driverEmail, String vehiclePlate,
-                                     String vehicleModel, int vehicleYear, String vehicleColor)
+                                       String vehicleModel, int vehicleYear, String vehicleColor)
             throws ValidationException, IOException {
 
         User user = userRepo.findByEmail(driverEmail);
@@ -76,7 +74,7 @@ public class AuthService {
         
         driver.addVehicle(newVehicle);
         
-        userRepo.add(driver);
+        userRepo.update(driver);
         vehicleRepo.add(newVehicle);
         
         return driver;

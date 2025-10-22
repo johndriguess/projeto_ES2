@@ -12,6 +12,12 @@ public abstract class User implements Serializable {
     protected String phone;
     protected String password;
 
+    // --- AVALIAÇÃO (RF16) ---
+    private double totalRatingSum = 0.0;
+    private int totalRatings = 0;
+    private double averageRating = 0.0; 
+    
+    
     public User(String name, String email, String phone, String password) {
         this.id = UUID.randomUUID().toString();
         this.name = name.trim();
@@ -36,6 +42,32 @@ public abstract class User implements Serializable {
 
     public abstract String getRole();
 
+    
+    public void addRating(int rating) {
+        if (rating < 1) {
+            rating = 1;
+        } else if (rating > 5) {
+            rating = 5;
+        }
+
+        this.totalRatingSum += rating;
+        this.totalRatings++;
+        
+        if (this.totalRatings > 0) {
+            this.averageRating = this.totalRatingSum / this.totalRatings;
+        }
+    }
+
+    public double getAverageRating() {
+        return this.averageRating;
+    }
+
+ 
+    public int getTotalRatings() {
+        return this.totalRatings;
+    }
+    // ------------------------------------------
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -51,7 +83,7 @@ public abstract class User implements Serializable {
 
     @Override
     public String toString() {
-        return String.format("%s[id=%s,name=%s,email=%s,phone=%s]",
-                this.getClass().getSimpleName(), id, name, email, phone);
+        return String.format("%s[id=%s,name=%s,email=%s,phone=%s,rating=%.1f]",
+                this.getClass().getSimpleName(), id, name, email, phone, averageRating); 
     }
 }
