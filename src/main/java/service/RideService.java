@@ -10,7 +10,9 @@ import model.Location;
 import model.PricingInfo;
 import model.PaymentMethod;
 import model.Receipt; 
+import model.VehicleCategory; 
 import util.ValidationException;
+import util.DistanceCalculator; 
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,13 +20,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Comparator; 
 
 public class RideService {
     private final RideRepository rideRepo;
     private final UserRepository userRepo;
     private final PricingService pricingService;
     private final DigitalReceiptService digitalReceiptService; 
-
+    
     public RideService(RideRepository rideRepo, UserRepository userRepo, PricingService pricingService) {
         this.rideRepo = rideRepo;
         this.userRepo = userRepo;
@@ -44,8 +47,71 @@ public class RideService {
         ride.setPaymentMethod(paymentMethod);
         ride.setVehicleCategory(categoryName); 
 
+        Driver assignedDriver = findAndAssignBestDriver(ride);
+        
+        if (assignedDriver != null) {
+            ride.setDriverId(assignedDriver.getId());
+            ride.setStatus(Ride.RideStatus.ACEITA);
+            ride.setDriverCurrentLocation(assignedDriver.getCurrentLocation());
+            System.out.println("Motorista encontrado e atribuído: " + assignedDriver.getName());
+        } else {
+            System.out.println("Nenhum motorista disponível. A corrida ficará solicitada.");
+        }
+
         rideRepo.add(ride);
         return ride;
+    }
+    
+    private Driver findAndAssignBestDriver(Ride ride) {
+        VehicleCategory categoryEnum = null;
+        for (VehicleCategory vc : VehicleCategory.values()) {
+            if (vc.getDisplayName().equalsIgnoreCase(ride.getVehicleCategory())) {
+                categoryEnum = vc;
+                break;
+            }
+        }
+
+        if (categoryEnum == null) {
+            System.err.println("Categoria não encontrada no Enum: " + ride.getVehicleCategory());
+            return null; 
+        }
+
+        final boolean isPremium = categoryEnum.isPremium();
+        final Location rideOrigin = ride.getOrigin();
+
+        List<Driver> availableDrivers = userRepo.findAll().stream()
+            .filter(u -> u instanceof Driver)
+            .map(u -> (Driver) u)
+            .filter(Driver::isAvailable)
+            .filter(d -> d.getVehicle() != null && d.getVehicle().getCategory().equalsIgnoreCase(ride.getVehicleCategory()))
+            .collect(Collectors.toList());
+
+        if (availableDrivers.isEmpty()) {
+            return null;
+        }
+
+        Comparator<Driver> comparator;
+        
+        if (isPremium) {
+            comparator = Comparator
+                .comparingDouble(Driver::getAverageRating).reversed()
+                .thenComparingDouble(d -> DistanceCalculator.calculateDistance(d.getCurrentLocation().getAddress(), rideOrigin.getAddress()));
+        } else {
+            comparator = Comparator
+                .comparingDouble(d -> DistanceCalculator.calculateDistance(d.getCurrentLocation().getAddress(), rideOrigin.getAddress()));
+        }
+
+        availableDrivers.sort(comparator);
+        
+        Driver bestDriver = availableDrivers.get(0);
+        bestDriver.setAvailable(false); 
+        try {
+            userRepo.update(bestDriver);
+        } catch (IOException e) {
+            System.err.println("Erro ao atualizar status do motorista: " + e.getMessage());
+        }
+        
+        return bestDriver;
     }
 
     public List<Ride> getRidesByPassenger(String passengerEmail) throws ValidationException {
@@ -72,19 +138,10 @@ public class RideService {
         if (driver == null) {
             throw new ValidationException("Motorista não encontrado.");
         }
-        if (driver.getVehicle() == null) {
-            throw new ValidationException("Você não tem veículo cadastrado.");
-        }
-        
-        String driverCategory = driver.getVehicle().getCategory();
-        
-        if (driverCategory == null || driverCategory.equalsIgnoreCase("UNASSIGNED")) {
-            throw new ValidationException("Seu veículo não possui uma categoria válida ('" + driverCategory + "').");
-        }
         
         return rideRepo.findAll().stream()
                 .filter(ride -> ride.getStatus() == Ride.RideStatus.SOLICITADA)
-                .filter(ride -> ride.getVehicleCategory() != null && ride.getVehicleCategory().equalsIgnoreCase(driverCategory))
+                .filter(ride -> ride.getVehicleCategory() != null && ride.getVehicleCategory().equalsIgnoreCase(driver.getVehicle().getCategory()))
                 .collect(Collectors.toList());
     }
 
@@ -97,6 +154,10 @@ public class RideService {
         }
         if (driver == null) {
             throw new ValidationException("Motorista não encontrado.");
+        }
+        
+        if (ride.getDriverId() != null) {
+             throw new ValidationException("Corrida já foi atribuída a outro motorista.");
         }
 
         ride.setDriverId(driver.getId());
@@ -117,11 +178,16 @@ public class RideService {
             throw new ValidationException("Corrida não encontrada.");
         }
         
+        Driver driver = (Driver) userRepo.findById(ride.getDriverId());
+        if (driver != null) {
+            driver.setAvailable(true); 
+            userRepo.update(driver);
+        }
+
         ride.setStatus(Ride.RideStatus.FINALIZADA);
         rideRepo.update(ride);
 
         Passenger passenger = (Passenger) userRepo.findById(ride.getPassengerId());
-        Driver driver = (Driver) userRepo.findById(ride.getDriverId());
         
         List<PricingInfo> pricingList = pricingService.calculateAllPricing(ride.getOrigin().getAddress(), ride.getDestination().getAddress());
         PricingInfo ridePricing = null;
