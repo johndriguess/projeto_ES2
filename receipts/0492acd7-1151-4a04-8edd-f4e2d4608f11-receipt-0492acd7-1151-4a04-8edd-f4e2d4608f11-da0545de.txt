@@ -1,0 +1,26 @@
+=== RECIBO ELETRÔNICO ===
+Recibo ID: receipt-0492acd7-1151-4a04-8edd-f4e2d4608f11-da0545de
+Corrida ID: 0492acd7-1151-4a04-8edd-f4e2d4608f11
+Gerado em: 2025-10-24T22:53:44.783993300Z
+
+--- Passageiro ---
+Nome: Passageiro
+Email: p@p.com
+
+--- Motorista ---
+Nome: Driver Perto
+Email: near@d.com
+
+--- Corrida ---
+Origem: Rua Perto
+Destino: Destino
+Distância estimada: 23,2 km
+Tempo estimado: 53 min
+Categoria: UberX
+Status da corrida: Finalizada
+
+--- Pagamento ---
+Forma: PIX
+Valor total: R$ 46,24
+
+Obrigado por utilizar o serviço.

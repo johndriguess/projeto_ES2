@@ -14,6 +14,7 @@ import util.ValidationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
+import java.io.File;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
@@ -31,8 +32,7 @@ public class RideHistoryServiceTest {
     @BeforeEach
     void setUp() throws IOException {
         historyRepo = new RideHistoryRepository(TEST_HISTORY_DB);
-        userRepo = new UserRepository();
-        userRepo.setStorageFile(TEST_USER_DB);
+        userRepo = new UserRepository(new File(TEST_USER_DB));
         historyService = new RideHistoryService(historyRepo, userRepo);
     }
 

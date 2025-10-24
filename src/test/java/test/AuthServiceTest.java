@@ -30,7 +30,7 @@ public class AuthServiceTest {
         if (vehicleFile.exists()) vehicleFile.delete();
 
         // Cria as dependências
-        userRepo = new UserRepository(TEST_USER_DB);
+        userRepo = new UserRepository(new File(TEST_USER_DB));
         vehicleRepo = new VehicleRepository(TEST_VEHICLE_DB);
         
         // Injeta as dependências no AuthService
@@ -66,10 +66,9 @@ public class AuthServiceTest {
         Driver d = auth.registerDriver("Johnatan", "johnatan@ex.com", "82911112222", "senhadriver", "CNH123", "XYZ-9999", "Uno", 2018, "Branco");
         assertNotNull(d.getId());
         assertEquals("johnatan@ex.com", d.getEmail());
-        assertFalse(d.getVehicles().isEmpty()); 
-        assertEquals(1, d.getVehicles().size()); 
-        assertEquals("XYZ-9999", d.getVehicles().get(0).getPlate());
-        assertEquals("UberComfort", d.getVehicles().get(0).getCategory());
+        assertNotNull(d.getVehicle());
+        assertEquals("XYZ-9999", d.getVehicle().getPlate());
+        assertEquals("Uber Comfort", d.getVehicle().getCategory());
         assertTrue(userRepo.existsByEmail("johnatan@ex.com"));
         assertTrue(vehicleRepo.existsByPlate("XYZ-9999"));
     }
@@ -81,9 +80,9 @@ public class AuthServiceTest {
         Driver d = auth.addVehicleToDriver("existing@ex.com", "DEF-456", "Uno", 2015, "Azul");
         
         assertNotNull(d);
-        assertEquals(2, d.getVehicles().size());
-        assertEquals("DEF-456", d.getVehicles().get(1).getPlate());
-        assertEquals("UberComfort", d.getVehicles().get(1).getCategory());
+        assertNotNull(d.getVehicle());
+        assertEquals("DEF-456", d.getVehicle().getPlate());
+        assertEquals("Uber Comfort", d.getVehicle().getCategory());
         assertTrue(userRepo.existsByEmail("existing@ex.com"));
         assertTrue(vehicleRepo.existsByPlate("DEF-456"));
     }
@@ -111,7 +110,7 @@ public class AuthServiceTest {
     public void shouldAssignUberBlackCategory() throws Exception {
         Driver d = auth.registerDriver("Luxury", "luxury@ex.com", "111", "senhaluxo", "CNH456", "LUX-0001", "Audi A6", 2022, "preto");
         assertNotNull(d);
-        assertEquals("UberBlack", d.getVehicles().get(0).getCategory());
+        assertEquals("Uber Black", d.getVehicle().getCategory());
         assertTrue(userRepo.existsByEmail("luxury@ex.com"));
         assertTrue(vehicleRepo.existsByPlate("LUX-0001"));
     }

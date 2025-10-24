@@ -82,6 +82,10 @@ public class Ride implements Serializable {
     public LocalDateTime getRequestTime() {
         return requestTime;
     }
+
+    public void setRequestTime(LocalDateTime requestTime) {
+        this.requestTime = requestTime;
+    }
     
     public String getVehicleCategory() {
         return vehicleCategory;

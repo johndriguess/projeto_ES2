@@ -41,7 +41,7 @@ public class PricingServiceTest {
     void testCalculatePricing_UberBlack_Success() throws ValidationException {
         String origin = "Rua A, 123";
         String destination = "Rua B, 456";
-        String category = "UberBlack";
+        String category = "Uber Black";
         
         PricingInfo pricing = pricingService.calculatePricing(origin, destination, category);
         assertNotNull(pricing);
@@ -99,7 +99,7 @@ public class PricingServiceTest {
             assertTrue(pricingList.get(i-1).getTotalPrice() <= pricingList.get(i).getTotalPrice());
         }
         
-        Set<String> categories = Set.of("UberX", "UberComfort", "UberBlack", "UberBag", "UberXL");
+        Set<String> categories = Set.of("UberX", "Uber Comfort", "Uber Black", "Uber Bag", "Uber XL");
         for (PricingInfo pricing : pricingList) {
             assertTrue(categories.contains(pricing.getCategory()));
         }
@@ -117,9 +117,9 @@ public class PricingServiceTest {
     
     @Test
     void testGetTariffForCategory_UberBlack() throws ValidationException {
-        Tariff tariff = pricingService.getTariffForCategory("UberBlack");
+        Tariff tariff = pricingService.getTariffForCategory("Uber Black");
         assertNotNull(tariff);
-        assertEquals("UberBlack", tariff.getCategory());
+        assertEquals("Uber Black", tariff.getCategory());
         assertEquals(4.00, tariff.getBaseFare(), 0.01);
         assertEquals(2.00, tariff.getPricePerKm(), 0.01);
         assertEquals(0.50, tariff.getPricePerMinute(), 0.01);
@@ -140,10 +140,10 @@ public class PricingServiceTest {
         assertNotNull(tariffs);
         assertEquals(5, tariffs.size());
         assertTrue(tariffs.containsKey("UberX"));
-        assertTrue(tariffs.containsKey("UberComfort"));
-        assertTrue(tariffs.containsKey("UberBlack"));
-        assertTrue(tariffs.containsKey("UberBag"));
-        assertTrue(tariffs.containsKey("UberXL"));
+        assertTrue(tariffs.containsKey("Uber Comfort"));
+        assertTrue(tariffs.containsKey("Uber Black"));
+        assertTrue(tariffs.containsKey("Uber Bag"));
+        assertTrue(tariffs.containsKey("Uber XL"));
     }
     
     @Test
@@ -152,17 +152,17 @@ public class PricingServiceTest {
         assertNotNull(categories);
         assertEquals(5, categories.size());
         assertTrue(categories.contains("UberX"));
-        assertTrue(categories.contains("UberComfort"));
-        assertTrue(categories.contains("UberBlack"));
-        assertTrue(categories.contains("UberBag"));
-        assertTrue(categories.contains("UberXL"));
+        assertTrue(categories.contains("Uber Comfort"));
+        assertTrue(categories.contains("Uber Black"));
+        assertTrue(categories.contains("Uber Bag"));
+        assertTrue(categories.contains("Uber XL"));
     }
     
     @Test
     void testCalculateDistance() {
-        double distance1 = pricingService.calculateDistance("Rua A", "Rua B");
-        double distance2 = pricingService.calculateDistance("Rua A", "Rua B");
-        double distance3 = pricingService.calculateDistance("Rua C", "Rua D");
+        double distance1 = pricingService.calculateDistance("Av. Paulista, 1000", "Rua Augusta, 500");
+        double distance2 = pricingService.calculateDistance("Av. Paulista, 1000", "Rua Augusta, 500");
+        double distance3 = pricingService.calculateDistance("Av. Brigadeiro Faria Lima, 3500", "Av. Rebouças, 1000");
         assertTrue(distance1 > 0);
         assertEquals(distance1, distance2, 0.01);
         assertNotEquals(distance1, distance3, 0.01);
@@ -170,9 +170,9 @@ public class PricingServiceTest {
     
     @Test
     void testCalculateEstimatedTime() {
-        int time1 = pricingService.calculateEstimatedTime("Rua A", "Rua B");
-        int time2 = pricingService.calculateEstimatedTime("Rua A", "Rua B");
-        int time3 = pricingService.calculateEstimatedTime("Rua C", "Rua D");
+        int time1 = pricingService.calculateEstimatedTime("Av. Paulista, 1000", "Rua Augusta, 500");
+        int time2 = pricingService.calculateEstimatedTime("Av. Paulista, 1000", "Rua Augusta, 500");
+        int time3 = pricingService.calculateEstimatedTime("Av. Brigadeiro Faria Lima, 3500", "Av. Rebouças, 1000");
         assertTrue(time1 >= 10);
         assertTrue(time1 <= 120);
         assertEquals(time1, time2);

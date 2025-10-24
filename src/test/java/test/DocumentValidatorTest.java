@@ -22,7 +22,7 @@ public class DocumentValidatorTest {
         //  Veículo de luxo e preto deve ser UberBlack
         Vehicle vehicle = new Vehicle("LUX-0001", "Audi A6", 2022, "preto");
         validator.validateVehicleCategory(vehicle);
-        assertEquals("UberBlack", vehicle.getCategory());
+        assertEquals("Uber Black", vehicle.getCategory());
     }
 
     @Test
@@ -30,7 +30,7 @@ public class DocumentValidatorTest {
         //  Veículo com ano a partir de 2015 deve ser UberComfort
         Vehicle vehicle = new Vehicle("CONF-9999", "Honda Civic", 2018, "Prata");
         validator.validateVehicleCategory(vehicle);
-        assertEquals("UberComfort", vehicle.getCategory());
+        assertEquals("Uber Comfort", vehicle.getCategory());
     }
 
     @Test
