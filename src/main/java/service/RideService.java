@@ -13,7 +13,8 @@ import model.PaymentMethod;
 import model.Receipt; 
 import model.VehicleCategory; 
 import util.ValidationException;
-import util.DistanceCalculator; 
+import util.DistanceCalculator;
+import service.PaymentService; 
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -28,13 +29,15 @@ public class RideService {
     private final UserRepository userRepo;
     private final PricingService pricingService;
     private final DigitalReceiptService digitalReceiptService;
+    private final PaymentService paymentService;
     private RideHistoryRepository historyRepo;
     
     public RideService(RideRepository rideRepo, UserRepository userRepo, PricingService pricingService) {
         this.rideRepo = rideRepo;
         this.userRepo = userRepo;
         this.pricingService = pricingService;
-        this.digitalReceiptService = new DigitalReceiptService(); 
+        this.digitalReceiptService = new DigitalReceiptService();
+        this.paymentService = new PaymentService();
     }
     
     public void setHistoryRepository(RideHistoryRepository historyRepo) {
@@ -151,6 +154,18 @@ public class RideService {
                 .collect(Collectors.toList());
     }
 
+    public List<Ride> getAvailableRidesForDriver(String driverEmail) throws ValidationException {
+        Driver driver = (Driver) userRepo.findByEmail(driverEmail);
+        if (driver == null) {
+            throw new ValidationException("Motorista não encontrado.");
+        }
+        
+        return rideRepo.findAll().stream()
+                .filter(ride -> ride.getStatus() == Ride.RideStatus.SOLICITADA)
+                .filter(ride -> ride.getVehicleCategory() != null && ride.getVehicleCategory().equalsIgnoreCase(driver.getVehicle().getCategory()))
+                .collect(Collectors.toList());
+    }
+
     public void acceptRide(String rideId, String driverEmail) throws ValidationException, IOException {
         Ride ride = getRideById(rideId);
         Driver driver = (Driver) userRepo.findByEmail(driverEmail);
@@ -176,6 +191,44 @@ public class RideService {
 
     public void refuseRide(String rideId, String driverEmail) {
         System.out.println("Motorista " + driverEmail + " recusou a corrida " + rideId);
+    }
+
+    public boolean processRidePayment(String rideId) throws ValidationException {
+        Ride ride = getRideById(rideId);
+        if (ride == null) {
+            throw new ValidationException("Corrida não encontrada.");
+        }
+        
+        if (ride.getStatus() != Ride.RideStatus.ACEITA) {
+            throw new ValidationException("Corrida deve estar aceita para processar pagamento.");
+        }
+
+        // Calcular preço da corrida
+        List<PricingInfo> pricingList = pricingService.calculateAllPricing(ride.getOrigin().getAddress(), ride.getDestination().getAddress());
+        PricingInfo ridePricing = null;
+        for (PricingInfo p : pricingList) {
+            if (p.getCategory().equalsIgnoreCase(ride.getVehicleCategory())) {
+                ridePricing = p;
+                break;
+            }
+        }
+        
+        if (ridePricing == null && !pricingList.isEmpty()) {
+            ridePricing = pricingList.get(0); 
+        } else if (ridePricing == null) {
+            throw new ValidationException("Não foi possível calcular o preço da corrida.");
+        }
+
+        // Processar pagamento
+        boolean paymentSuccess = paymentService.processPayment(ridePricing.getTotalPrice(), ride.getPaymentMethod());
+        
+        if (paymentSuccess) {
+            System.out.println("✅ Pagamento processado com sucesso!");
+            return true;
+        } else {
+            System.out.println("❌ Falha no processamento do pagamento.");
+            return false;
+        }
     }
 
     public void emitReceiptForRide(String rideId, String paymentMethod) throws IOException, ValidationException {
@@ -218,7 +271,7 @@ public class RideService {
         if (historyRepo != null) {
             try {
                 model.RideHistory history = new model.RideHistory(ride, driver != null ? driver.getName() : "Não informado", 
-                        ridePricing.getPrice(), paymentMethod);
+                        ridePricing.getTotalPrice(), paymentMethod);
                 historyRepo.add(history);
             } catch (IOException e) {
                 System.err.println("Erro ao adicionar corrida ao histórico: " + e.getMessage());

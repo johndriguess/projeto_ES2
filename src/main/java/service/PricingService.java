@@ -21,10 +21,10 @@ public class PricingService {
         //  mapeia uma tarifa por categoria
         // tarifa base + preco/km + preco/min + velocidade media p calcular o tempo
         tariffMap.put("UberX", new Tariff("UberX", 2.50, 1.20, 0.30, 30.0));
-        tariffMap.put("UberComfort", new Tariff("UberComfort", 3.00, 1.50, 0.35, 35.0));
-        tariffMap.put("UberBlack", new Tariff("UberBlack", 4.00, 2.00, 0.50, 40.0));
-        tariffMap.put("UberBag", new Tariff("UberBag", 2.80, 1.30, 0.32, 28.0));
-        tariffMap.put("UberXL", new Tariff("UberXL", 3.50, 1.80, 0.40, 32.0));
+        tariffMap.put("Uber Comfort", new Tariff("Uber Comfort", 3.00, 1.50, 0.35, 35.0));
+        tariffMap.put("Uber Black", new Tariff("Uber Black", 4.00, 2.00, 0.50, 40.0));
+        tariffMap.put("Uber Bag", new Tariff("Uber Bag", 2.80, 1.30, 0.32, 28.0));
+        tariffMap.put("Uber XL", new Tariff("Uber XL", 3.50, 1.80, 0.40, 32.0));
         
         return tariffMap;
     }

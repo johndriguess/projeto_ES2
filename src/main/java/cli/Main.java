@@ -72,6 +72,10 @@ public class Main {
             System.out.println("13 - Gerar / Enviar / Visualizar Recibo (RF15)");
             System.out.println("14 - Avaliar uma Corrida (RF16)");
             System.out.println("15 - Histórico de Corridas (RF18)");
+            System.out.println("16 - Visualizar Corridas Disponíveis (RF08)");
+            System.out.println("17 - Aceitar Corrida (RF08)");
+            System.out.println("18 - Recusar Corrida (RF08)");
+            System.out.println("19 - Pagar Corrida (RF13)");
             System.out.println("0 - Sair");
             System.out.print("> ");
             String opt = sc.nextLine().trim();
@@ -93,6 +97,10 @@ public class Main {
                     case "13": generateOrViewReceipt(); break;
                     case "14": rateRide(); break;
                     case "15": showRideHistory(); break;
+                    case "16": listAvailableRides(); break;
+                    case "17": acceptRide(); break;
+                    case "18": refuseRide(); break;
+                    case "19": payRide(); break;
                     case "0":
                         System.out.println("Saindo...");
                         sc.close();
@@ -575,5 +583,112 @@ public class Main {
         
         model.RideHistory history = historyService.getHistoryById(historyId);
         System.out.println(history.getDetailedInfo());
+    }
+
+    private static void listAvailableRides() {
+        System.out.println("=== Visualizar Corridas Disponíveis (RF08) ===");
+        System.out.print("Digite seu email de motorista: ");
+        String driverEmail = sc.nextLine().trim();
+        
+        try {
+            User user = userRepo.findByEmail(driverEmail);
+            if (user == null || !(user instanceof Driver)) {
+                System.out.println("Erro: Você precisa ser um motorista para visualizar corridas disponíveis.");
+                return;
+            }
+            
+            Driver driver = (Driver) user;
+            List<Ride> availableRides = rideService.getAvailableRidesForDriver(driverEmail);
+            
+            if (availableRides.isEmpty()) {
+                System.out.println("Nenhuma corrida disponível para sua categoria de veículo.");
+                return;
+            }
+            
+            System.out.println("\n=== Corridas Disponíveis ===");
+            System.out.println("Sua categoria: " + driver.getVehicle().getCategory());
+            System.out.println("Corridas encontradas: " + availableRides.size());
+            System.out.println();
+            
+            for (int i = 0; i < availableRides.size(); i++) {
+                Ride ride = availableRides.get(i);
+                System.out.printf("%d. ID: %s\n", i + 1, ride.getId());
+                System.out.printf("   Origem: %s\n", ride.getOrigin().getAddress());
+                System.out.printf("   Destino: %s\n", ride.getDestination().getAddress());
+                System.out.printf("   Categoria: %s\n", ride.getVehicleCategory());
+                System.out.printf("   Tempo estimado: %d minutos\n", ride.getEstimatedTimeMinutes());
+                System.out.printf("   Passageiro: %s\n", ride.getPassengerEmail());
+                System.out.println("   -------------------------");
+            }
+            
+        } catch (ValidationException ve) {
+            System.out.println("Erro: " + ve.getMessage());
+        }
+    }
+
+    private static void acceptRide() {
+        System.out.println("=== Aceitar Corrida (RF08) ===");
+        System.out.print("Digite seu email de motorista: ");
+        String driverEmail = sc.nextLine().trim();
+        System.out.print("Digite o ID da corrida que deseja aceitar: ");
+        String rideId = sc.nextLine().trim();
+        
+        try {
+            User user = userRepo.findByEmail(driverEmail);
+            if (user == null || !(user instanceof Driver)) {
+                System.out.println("Erro: Você precisa ser um motorista para aceitar corridas.");
+                return;
+            }
+            
+            rideService.acceptRide(rideId, driverEmail);
+            System.out.println("Corrida aceita com sucesso!");
+            
+        } catch (ValidationException ve) {
+            System.out.println("Erro: " + ve.getMessage());
+        } catch (IOException ioe) {
+            System.out.println("Erro de I/O: " + ioe.getMessage());
+        }
+    }
+
+    private static void refuseRide() {
+        System.out.println("=== Recusar Corrida (RF08) ===");
+        System.out.print("Digite seu email de motorista: ");
+        String driverEmail = sc.nextLine().trim();
+        System.out.print("Digite o ID da corrida que deseja recusar: ");
+        String rideId = sc.nextLine().trim();
+        
+        try {
+            User user = userRepo.findByEmail(driverEmail);
+            if (user == null || !(user instanceof Driver)) {
+                System.out.println("Erro: Você precisa ser um motorista para recusar corridas.");
+                return;
+            }
+            
+            rideService.refuseRide(rideId, driverEmail);
+            System.out.println("Corrida recusada com sucesso!");
+            
+        } catch (ValidationException ve) {
+            System.out.println("Erro: " + ve.getMessage());
+        }
+    }
+
+    private static void payRide() {
+        System.out.println("=== Pagar Corrida (RF13) ===");
+        System.out.print("Digite o ID da corrida: ");
+        String rideId = sc.nextLine().trim();
+        
+        try {
+            boolean paymentSuccess = rideService.processRidePayment(rideId);
+            
+            if (paymentSuccess) {
+                System.out.println("\n🎉 Pagamento realizado com sucesso!");
+                System.out.println("A corrida pode ser finalizada agora.");
+            } else {
+                System.out.println("\n❌ Falha no pagamento. Tente novamente.");
+            }
+            
+        } catch (ValidationException ve) {
+            System.out.println("Erro: " + ve.getMessage());
+        }
     }
 }

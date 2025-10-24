@@ -1,0 +1,26 @@
+=== RECIBO ELETRÔNICO ===
+Recibo ID: receipt-a04cdd4f-2779-4d33-ac57-ff9bafe1a6e8-336eef70
+Corrida ID: a04cdd4f-2779-4d33-ac57-ff9bafe1a6e8
+Gerado em: 2025-10-24T01:14:25.390404700Z
+
+--- Passageiro ---
+Nome: Teste
+Email: teste@teste.com
+
+--- Motorista ---
+Nome: testemotorista@teste.com
+Email: testemotorista@teste.com
+
+--- Corrida ---
+Origem: Rua Samuel Araujo Diniz, 183
+Destino: UEPB - Campus I
+Distância estimada: 3,4 km
+Tempo estimado: 13 min
+Categoria: Uber Comfort
+Status da corrida: Finalizada
+
+--- Pagamento ---
+Forma: PIX
+Valor total: R$ 12,65
+
+Obrigado por utilizar o serviço.

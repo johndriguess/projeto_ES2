@@ -16,29 +16,85 @@ public class PaymentService {
     }
 
     public boolean processPayment(double amount, PaymentMethod method) {
-        System.out.println("Iniciando processamento de pagamento de R$" + String.format("%.2f", amount) + " via " + method.getDisplayName());
+        System.out.println("\n" + "=".repeat(50));
+        System.out.println("💳 PROCESSAMENTO DE PAGAMENTO");
+        System.out.println("=".repeat(50));
+        System.out.println("💰 Valor: R$ " + String.format("%.2f", amount));
+        System.out.println("💳 Método: " + method.getDisplayName());
+        System.out.println("=".repeat(50));
 
         if (method == PaymentMethod.CASH) {
-            System.out.println("Pagamento em dinheiro selecionado. O pagamento será coletado pelo motorista.");
+            System.out.println("\n💵 PAGAMENTO EM DINHEIRO");
+            System.out.println("┌─────────────────────────────────────┐");
+            System.out.println("│  O pagamento será coletado pelo     │");
+            System.out.println("│  motorista ao final da corrida.    │");
+            System.out.println("│                                     │");
+            System.out.println("│  💡 Dica: Tenha o valor exato       │");
+            System.out.println("│      para facilitar o troco!        │");
+            System.out.println("└─────────────────────────────────────┘");
             return true;
         }
 
         // RF13 - Simulação de QR Code e Chave PIX
         if (method == PaymentMethod.PIX) {
             String pixKey = java.util.UUID.randomUUID().toString();
-            System.out.println("\n--- PAGAMENTO PIX ---");
-            System.out.println("Chave PIX Aleatória: " + pixKey);
-            System.out.println("\nSimulação de QR Code:");
-            System.out.println("█████████████████████");
-            System.out.println("█ ▄▄▄▄▄ █▀█▀█ █ ▄▄▄▄▄ █");
-            System.out.println("█ █   █ █▄█▄█ █ █   █ █");
-            System.out.println("█ █▄▄▄█ █▀▀▀█ █ █▄▄▄█ █");
-            System.out.println("█▄▄▄▄▄▄▄█ █ █ █▄▄▄▄▄▄▄█");
-            System.out.println("█████████████████████");
-            System.out.println("\nEscaneie o QR Code ou use a chave PIX no seu app de pagamentos.");
-            System.out.print("Após realizar o pagamento, pressione ENTER para confirmar...");
-            new java.util.Scanner(System.in).nextLine(); // Pausa para o usuário
-            System.out.println("Confirmando pagamento...");
+            System.out.println("\n🔗 PAGAMENTO PIX");
+            System.out.println("┌─────────────────────────────────────┐");
+            System.out.println("│  Chave PIX: " + pixKey.substring(0, 8) + "... │");
+            System.out.println("└─────────────────────────────────────┘");
+            
+            System.out.println("\n📱 QR CODE PARA PAGAMENTO:");
+            System.out.println("┌─────────────────────────────────────┐");
+            System.out.println("│ ████████████████████████████████ │");
+            System.out.println("│ █ ▄▄▄▄▄ █▀█▀█ █ ▄▄▄▄▄ █ ▄▄▄▄▄ █ │");
+            System.out.println("│ █ █   █ █▄█▄█ █ █   █ █ █   █ █ │");
+            System.out.println("│ █ █▄▄▄█ █▀▀▀█ █ █▄▄▄█ █ █▄▄▄█ █ │");
+            System.out.println("│ █▄▄▄▄▄▄█ █ █ █▄▄▄▄▄▄▄█ █ █ █ │");
+            System.out.println("│ ████████████████████████████████ │");
+            System.out.println("└─────────────────────────────────────┘");
+            
+            System.out.println("\n📋 INSTRUÇÕES:");
+            System.out.println("1. Abra seu app de pagamentos");
+            System.out.println("2. Escaneie o QR Code acima");
+            System.out.println("3. Ou digite a chave PIX: " + pixKey);
+            System.out.println("4. Confirme o pagamento");
+            
+            System.out.print("\n⏳ Após realizar o pagamento, pressione ENTER para confirmar...");
+            new java.util.Scanner(System.in).nextLine();
+            System.out.println("✅ Pagamento confirmado!");
+        }
+
+        // Simulação para Cartão de Crédito
+        if (method == PaymentMethod.CREDIT_CARD) {
+            System.out.println("\n💳 PAGAMENTO COM CARTÃO DE CRÉDITO");
+            System.out.println("┌─────────────────────────────────────┐");
+            System.out.println("│  Processando pagamento...          │");
+            System.out.println("│                                     │");
+            System.out.println("│  🔒 Dados seguros protegidos       │");
+            System.out.println("│  ⏱️  Aguarde a confirmação...       │");
+            System.out.println("└─────────────────────────────────────┘");
+            
+            // Simular delay de processamento
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        // Simulação para PayPal
+        if (method == PaymentMethod.PAYPAL) {
+            System.out.println("\n🌐 PAGAMENTO VIA PAYPAL");
+            System.out.println("┌─────────────────────────────────────┐");
+            System.out.println("│  Redirecionando para PayPal...     │");
+            System.out.println("│                                     │");
+            System.out.println("│  🔗 Abra o link no navegador        │");
+            System.out.println("│  👤 Faça login na sua conta        │");
+            System.out.println("│  ✅ Confirme o pagamento            │");
+            System.out.println("└─────────────────────────────────────┘");
+            
+            System.out.print("\n⏳ Após confirmar no PayPal, pressione ENTER...");
+            new java.util.Scanner(System.in).nextLine();
         }
 
         // Simula uma chamada para uma API de pagamento externa

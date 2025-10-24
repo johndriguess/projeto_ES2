@@ -1,0 +1,26 @@
+=== RECIBO ELETRÔNICO ===
+Recibo ID: receipt-7c9753f6-3706-4b85-aa0b-d04662cc2c7e-f7624304
+Corrida ID: 7c9753f6-3706-4b85-aa0b-d04662cc2c7e
+Gerado em: 2025-10-24T01:07:52.158894300Z
+
+--- Passageiro ---
+Nome: Teste
+Email: teste@teste.com
+
+--- Motorista ---
+Nome: testemotorista@teste.com
+Email: testemotorista@teste.com
+
+--- Corrida ---
+Origem: rua teste 1
+Destino: rua de teste 2
+Distância estimada: 4,3 km
+Tempo estimado: 16 min
+Categoria: UberX
+Status da corrida: Finalizada
+
+--- Pagamento ---
+Forma: Não informado
+Valor total: R$ 12,46
+
+Obrigado por utilizar o serviço.

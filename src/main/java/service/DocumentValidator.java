@@ -7,9 +7,9 @@ public class DocumentValidator {
 
     public void validateVehicleCategory(Vehicle vehicle) throws ValidationException {
         if (isUberBlack(vehicle)) {
-            vehicle.setCategory("UberBlack");
+            vehicle.setCategory("Uber Black");
         } else if (isUberComfort(vehicle)) {
-            vehicle.setCategory("UberComfort");
+            vehicle.setCategory("Uber Comfort");
         } else if (isUberX(vehicle)) {
             vehicle.setCategory("UberX");
         } else {
