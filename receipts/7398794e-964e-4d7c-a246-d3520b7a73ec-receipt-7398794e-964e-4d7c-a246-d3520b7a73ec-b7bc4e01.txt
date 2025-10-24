@@ -1,0 +1,26 @@
+=== RECIBO ELETRÔNICO ===
+Recibo ID: receipt-7398794e-964e-4d7c-a246-d3520b7a73ec-b7bc4e01
+Corrida ID: 7398794e-964e-4d7c-a246-d3520b7a73ec
+Gerado em: 2025-10-24T23:22:01.165224500Z
+
+--- Passageiro ---
+Nome: E2E Passenger
+Email: e2e_pass@example.com
+
+--- Motorista ---
+Nome: E2E Driver
+Email: e2e_driver@example.com
+
+--- Corrida ---
+Origem: Rua Origem
+Destino: Rua Destino
+Distância estimada: 16,2 km
+Tempo estimado: 39 min
+Categoria: UberX
+Status da corrida: Finalizada
+
+--- Pagamento ---
+Forma: Dinheiro
+Valor total: R$ 33,64
+
+Obrigado por utilizar o serviço.

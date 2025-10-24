@@ -22,7 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.Comparator; 
+import java.util.Comparator;
 
 public class RideService {
     private final RideRepository rideRepo;
@@ -54,7 +54,11 @@ public class RideService {
 
         Ride ride = new Ride(p.getId(), passengerEmail, originLoc, destLoc);
         ride.setPaymentMethod(paymentMethod);
-        ride.setVehicleCategory(categoryName); 
+            VehicleCategory categoryEnum = resolveCategory(categoryName);
+            if (categoryEnum == null) {
+                throw new ValidationException("Categoria de veículo inválida: " + categoryName);
+            }
+            ride.setVehicleCategory(categoryEnum.name());
 
         Driver assignedDriver = findAndAssignBestDriver(ride);
         
@@ -72,18 +76,14 @@ public class RideService {
     }
     
     private Driver findAndAssignBestDriver(Ride ride) {
-        VehicleCategory categoryEnum = null;
-        for (VehicleCategory vc : VehicleCategory.values()) {
-            if (vc.getDisplayName().equalsIgnoreCase(ride.getVehicleCategory())) {
-                categoryEnum = vc;
-                break;
-            }
+        final VehicleCategory categoryEnum;
+        try {
+            categoryEnum = VehicleCategory.valueOf(ride.getVehicleCategory());
+        } catch (IllegalArgumentException e) {
+            System.err.println("Categoria não encontrada no Enum: " + ride.getVehicleCategory());
+            return null;
         }
 
-        if (categoryEnum == null) {
-            System.err.println("Categoria não encontrada no Enum: " + ride.getVehicleCategory());
-            return null; 
-        }
 
         final boolean isPremium = categoryEnum.isPremium();
         final Location rideOrigin = ride.getOrigin();
@@ -92,7 +92,9 @@ public class RideService {
             .filter(u -> u instanceof Driver)
             .map(u -> (Driver) u)
             .filter(Driver::isAvailable)
-            .filter(d -> d.getVehicle() != null && d.getVehicle().getCategory().equalsIgnoreCase(ride.getVehicleCategory()))
+         .filter(d -> d.getVehicle() != null && d.getVehicle().getCategory() != null && (
+             d.getVehicle().getCategory().equals(categoryEnum.name()) ||
+             d.getVehicle().getCategory().equalsIgnoreCase(categoryEnum.getDisplayName())))
             .collect(Collectors.toList());
 
         if (availableDrivers.isEmpty()) {
@@ -103,8 +105,8 @@ public class RideService {
         
         if (isPremium) {
             comparator = Comparator
-                .comparingDouble(Driver::getAverageRating).reversed()
-                .thenComparingDouble(d -> DistanceCalculator.calculateDistance(d.getCurrentLocation().getAddress(), rideOrigin.getAddress()));
+                    .comparing(Driver::getAverageRating, Comparator.reverseOrder())
+                    .thenComparing(d -> DistanceCalculator.calculateDistance(d.getCurrentLocation().getAddress(), rideOrigin.getAddress()));
         } else {
             comparator = Comparator
                 .comparingDouble(d -> DistanceCalculator.calculateDistance(d.getCurrentLocation().getAddress(), rideOrigin.getAddress()));
@@ -276,6 +278,21 @@ public class RideService {
             } catch (IOException e) {
                 System.err.println("Erro ao adicionar corrida ao histórico: " + e.getMessage());
             }
+        }
+    }
+
+    private VehicleCategory resolveCategory(String input) {
+        if (input == null) return null;
+        for (VehicleCategory vc : VehicleCategory.values()) {
+            if (vc.name().equalsIgnoreCase(input)) return vc;
+            if (vc.getDisplayName().equalsIgnoreCase(input)) return vc;
+        }
+        // try normalized fallback
+        String norm = input.replace(" ", "_").replace("-", "_").replace("Uber", "UBER").toUpperCase();
+        try {
+            return VehicleCategory.valueOf(norm);
+        } catch (IllegalArgumentException e) {
+            return null;
         }
     }
 }

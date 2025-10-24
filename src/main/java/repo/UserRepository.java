@@ -10,7 +10,9 @@ public class UserRepository {
     private Map<String, User> usersByEmail; 
 
     public UserRepository() {
-        this.storageFile = new File("users.date");
+        File dataDir = new File("data");
+        if (!dataDir.exists()) dataDir.mkdirs();
+        this.storageFile = new File(dataDir, "users.date");
         load();
     }
 

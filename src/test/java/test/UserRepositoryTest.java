@@ -1,58 +1,53 @@
 package test;
 
-import model.Driver;
-import model.User;
+import model.Passenger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import repo.UserRepository;
-import java.io.File;
-import java.io.IOException;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class UserRepositoryTest {
-    private static final String TEST_DB = "test_users.db";
-    private UserRepository repo;
+
+    private Passenger passenger;
 
     @BeforeEach
-    public void setup() {
-        File file = new File(TEST_DB);
-        if (file.exists()) {
-            file.delete();
-        }
-        repo = new UserRepository(TEST_DB);
+    public void setUp() {
+        passenger = new Passenger("Test User", "test@email.com", "12345", "pass");
     }
 
     @Test
-    public void shouldAddUserAndFindItByEmail() throws IOException {
-        // Adicionar um motorista e encontrá-lo pelo e-mail
-        Driver d = new Driver("Ana", "ana@test.com", "111", "senha123", "CNH456");
-        repo.add(d);
-        User foundUser = repo.findByEmail("ana@test.com");
-        
-        assertNotNull(foundUser);
-        assertEquals(d.getEmail(), foundUser.getEmail());
+    public void testAddSingleRating() {
+        passenger.addRating(5);
+        assertEquals(5.0, passenger.getAverageRating());
+        assertEquals(1, passenger.getTotalRatings());
     }
 
     @Test
-    public void shouldCheckIfUserExists() throws IOException {
-        //  Verificar se um usuário existe após ser adicionado
-        Driver d = new Driver("Joao", "joao@test.com", "222", "senha123", "CNH123");
-        repo.add(d);
-        
-        assertTrue(repo.existsByEmail("joao@test.com"));
-        assertFalse(repo.existsByEmail("naoexiste@test.com"));
+    public void testAddMultipleRatings() {
+        passenger.addRating(5);
+        passenger.addRating(3);
+        assertEquals(4.0, passenger.getAverageRating());
+        assertEquals(2, passenger.getTotalRatings());
     }
 
     @Test
-    public void shouldPersistUserAfterClosingAndReopening() throws IOException {
-        //Salvar um usuário e verificar se ele ainda existe após fechar o repositório
-        Driver d = new Driver("Persistido", "persistido@test.com", "333", "senha123", "CNH789");
-        repo.add(d);
+    public void testRatingClampingUpper() {
+        passenger.addRating(10);
+        assertEquals(5.0, passenger.getAverageRating());
+    }
+
+    @Test
+    public void testRatingClampingLower() {
+        passenger.addRating(0);
+        assertEquals(1.0, passenger.getAverageRating());
         
-        UserRepository newRepo = new UserRepository(TEST_DB);
-        User foundUser = newRepo.findByEmail("persistido@test.com");
-        
-        assertNotNull(foundUser);
-        assertEquals(d.getEmail(), foundUser.getEmail());
+        passenger.addRating(-5);
+        assertEquals(1.0, passenger.getAverageRating()); 
+        assertEquals(2, passenger.getTotalRatings());
+    }
+
+    @Test
+    public void testNoRatings() {
+        assertEquals(0.0, passenger.getAverageRating());
+        assertEquals(0, passenger.getTotalRatings());
     }
 }

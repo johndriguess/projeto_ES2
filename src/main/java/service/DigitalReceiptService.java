@@ -15,7 +15,7 @@ import java.util.UUID;
 
 public class DigitalReceiptService {
 
-    private final String receiptsFolder = "receipts";
+    private final String receiptsFolder = "data" + File.separator + "receipts";
 
     public DigitalReceiptService() {
         File f = new File(receiptsFolder);

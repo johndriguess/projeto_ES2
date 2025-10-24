@@ -26,10 +26,11 @@ import java.util.Scanner;
 import java.util.List;
 
 public class Main {
-    private static final String USER_DB = "users.db";
-    private static final String VEHICLE_DB = "vehicles.db";
-    private static final String RIDE_DB = "rides.db";
-    private static final String HISTORY_DB = "ride_history.db";
+    private static final String DATA_DIR = "data" + File.separator;
+    private static final String USER_DB = DATA_DIR + "users.date";
+    private static final String VEHICLE_DB = DATA_DIR + "vehicles.db";
+    private static final String RIDE_DB = DATA_DIR + "rides.db";
+    private static final String HISTORY_DB = DATA_DIR + "ride_history.db";
     private static UserRepository userRepo;
     private static VehicleRepository vehicleRepo;
     private static RideRepository rideRepo;
@@ -43,6 +44,9 @@ public class Main {
 
     public static void main(String[] args) {
         userRepo = new UserRepository();
+    // Ensure data directory exists
+    File dataDir = new File("data");
+    if (!dataDir.exists()) dataDir.mkdirs();
         vehicleRepo = new VehicleRepository(VEHICLE_DB);
         rideRepo = new RideRepository(RIDE_DB);
         historyRepo = new RideHistoryRepository(HISTORY_DB);
@@ -166,7 +170,7 @@ public class Main {
         }
     }
 
-    private static void generateOrViewReceipt() {
+    private static void generateOrViewReceipt() throws ValidationException {
         System.out.println("=== Gerar / Enviar / Visualizar Recibo (RF15) ===");
         System.out.print("Digite o ID da corrida: ");
         String rideId = sc.nextLine().trim();
@@ -656,20 +660,14 @@ public class Main {
         String driverEmail = sc.nextLine().trim();
         System.out.print("Digite o ID da corrida que deseja recusar: ");
         String rideId = sc.nextLine().trim();
-        
-        try {
-            User user = userRepo.findByEmail(driverEmail);
-            if (user == null || !(user instanceof Driver)) {
-                System.out.println("Erro: Você precisa ser um motorista para recusar corridas.");
-                return;
-            }
-            
-            rideService.refuseRide(rideId, driverEmail);
-            System.out.println("Corrida recusada com sucesso!");
-            
-        } catch (ValidationException ve) {
-            System.out.println("Erro: " + ve.getMessage());
+        User user = userRepo.findByEmail(driverEmail);
+        if (user == null || !(user instanceof Driver)) {
+            System.out.println("Erro: Você precisa ser um motorista para recusar corridas.");
+            return;
         }
+
+        rideService.refuseRide(rideId, driverEmail);
+        System.out.println("Corrida recusada com sucesso!");
     }
 
     private static void payRide() {

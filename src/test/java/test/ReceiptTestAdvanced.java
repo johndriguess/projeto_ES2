@@ -6,6 +6,7 @@ import service.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import util.ValidationException;
 import java.util.List;
 
 public class ReceiptTestAdvanced {
@@ -17,7 +18,8 @@ public class ReceiptTestAdvanced {
             RideRepository rideRepo = new RideRepository("rides.dat");
 
             // Criar serviço
-            RideService rideService = new RideService(rideRepo, userRepo);
+            PricingService pricingService = new PricingService();
+            RideService rideService = new RideService(rideRepo, userRepo, pricingService);
 
             // Criar passageiro
             Passenger passenger = new Passenger("João da Silva", "pass@example.com", "11999999999", "123456");
@@ -71,7 +73,7 @@ public class ReceiptTestAdvanced {
                 rideService.emitReceiptForRide(r.getId(), "Cartão de Crédito");
             }
 
-        } catch (IOException e) {
+        } catch (IOException | ValidationException e) {
             System.err.println("Erro durante o teste avançado: " + e.getMessage());
         }
     }

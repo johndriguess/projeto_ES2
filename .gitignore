@@ -9,3 +9,7 @@
 /dataSources/
 /dataSources.local.xml
 /target/
+# Local CLI test inputs and outputs
+cli_input.txt
+cli_full_input.txt
+cli_full_output.txt
