@@ -1,5 +1,5 @@
 package util;
 
-public class ValidationException extends Exception {
+public class ValidationException extends RuntimeException {
     public ValidationException(String msg) { super(msg); }
 }
