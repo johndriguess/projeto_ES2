@@ -1,5 +1,7 @@
 package test;
 
+import model.Delivery;
+import model.DeliveryStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import repo.DeliveryRepository;
@@ -17,9 +19,10 @@ class DeliveryServiceTest {
         service = new DeliveryService(new DeliveryRepository());
     }
 
+    // ✅ teste antigo (continua válido)
     @Test
     void shouldRegisterDelivery() {
-        var delivery = service.register(
+        Delivery delivery = service.register(
                 "João",
                 "joao@email.com",
                 "12345678901",
@@ -29,6 +32,7 @@ class DeliveryServiceTest {
         assertNotNull(delivery.getId());
     }
 
+    // ✅ teste antigo (continua válido)
     @Test
     void shouldNotAllowDuplicateEmail() {
         service.register(
@@ -47,5 +51,49 @@ class DeliveryServiceTest {
             );
         });
     }
-}
 
+    // 🆕 RF02 — entregador aprovado
+    @Test
+    void shouldApproveDeliveryWithValidDocuments() {
+        Delivery delivery = service.registerWithDocuments(
+                "Maria",
+                "maria@email.com",
+                "12345678901",
+                "11999999999",
+                "12345678901",
+                "CRLV123"
+        );
+
+        assertEquals(DeliveryStatus.APROVADO, delivery.getValidationStatus());
+    }
+
+    // 🆕 RF02 — entregador rejeitado
+    @Test
+    void shouldRejectDeliveryWithInvalidCPF() {
+        Delivery delivery = service.registerWithDocuments(
+                "Maria",
+                "maria2@email.com",
+                "123",
+                "11999999999",
+                "12345678901",
+                "CRLV123"
+        );
+
+        assertEquals(DeliveryStatus.REJEITADO, delivery.getValidationStatus());
+    }
+
+    // 🆕 validação de CNH obrigatória
+    @Test
+    void shouldThrowExceptionWhenCNHMissing() {
+        assertThrows(ValidationException.class, () ->
+                service.registerWithDocuments(
+                        "Carlos",
+                        "carlos@email.com",
+                        "12345678901",
+                        "11999999999",
+                        "",
+                        "CRLV123"
+                )
+        );
+    }
+}

@@ -4,19 +4,28 @@ import java.util.UUID;
 
 public class Delivery {
 
-    private String id;
+    private String id = UUID.randomUUID().toString();
     private String name;
     private String email;
-    private String document;
+    private String document; // CPF
     private String phone;
+
+    // 🔹 novos campos RF02
+    private String cnh;
+    private String vehicleDocument; // documento da moto
+    private DeliveryStatus validationStatus;
+
     private boolean active;
 
-    public Delivery(String name, String email, String document, String phone) {
-        this.id = UUID.randomUUID().toString();
+    public Delivery(String name, String email, String document, String phone,
+                    String cnh, String vehicleDocument) {
         this.name = name;
         this.email = email;
         this.document = document;
         this.phone = phone;
+        this.cnh = cnh;
+        this.vehicleDocument = vehicleDocument;
+        this.validationStatus = DeliveryStatus.PENDENTE;
         this.active = true;
     }
 
@@ -38,6 +47,22 @@ public class Delivery {
 
     public String getPhone() {
         return phone;
+    }
+
+    public String getCnh() {
+        return cnh;
+    }
+
+    public String getVehicleDocument() {
+        return vehicleDocument;
+    }
+
+    public DeliveryStatus getValidationStatus() {
+        return validationStatus;
+    }
+
+    public void setValidationStatus(DeliveryStatus validationStatus) {
+        this.validationStatus = validationStatus;
     }
 
     public boolean isActive() {
