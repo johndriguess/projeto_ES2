@@ -16,6 +16,12 @@ import model.VehicleCategory;
 import model.Ride;
 import model.PricingInfo;
 import util.ValidationException;
+import repo.DeliveryRepository;
+import repo.RestaurantRepository;
+import service.DeliveryService;
+import service.RestaurantService;
+import model.Delivery;
+import model.Restaurant;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,6 +47,10 @@ public class Main {
     private static RatingService ratingService;
     private static RideHistoryService historyService; 
     private static Scanner sc;
+    private static DeliveryRepository deliveryRepo;
+    private static RestaurantRepository restaurantRepo;
+    private static DeliveryService deliveryService;
+    private static RestaurantService restaurantService;
 
     public static void main(String[] args) {
         userRepo = new UserRepository();
@@ -57,6 +67,11 @@ public class Main {
         ratingService = new RatingService(userRepo, rideRepo);
         historyService = new RideHistoryService(historyRepo, userRepo); 
         sc = new Scanner(System.in);
+        deliveryRepo = new DeliveryRepository();
+        restaurantRepo = new RestaurantRepository();
+
+        deliveryService = new DeliveryService(deliveryRepo);
+        restaurantService = new RestaurantService(restaurantRepo);
 
         System.out.println("=== UberPB ===");
         while (true) {
@@ -80,6 +95,8 @@ public class Main {
             System.out.println("17 - Aceitar Corrida (RF08)");
             System.out.println("18 - Recusar Corrida (RF08)");
             System.out.println("19 - Pagar Corrida (RF13)");
+            System.out.println("20 - Cadastrar Entregador (RF02)");
+            System.out.println("21 - Cadastrar Restaurante");
             System.out.println("0 - Sair");
             System.out.print("> ");
             String opt = sc.nextLine().trim();
@@ -105,6 +122,8 @@ public class Main {
                     case "17": acceptRide(); break;
                     case "18": refuseRide(); break;
                     case "19": payRide(); break;
+                    case "20": registerDelivery(); break;
+                    case "21": registerRestaurant(); break;
                     case "0":
                         System.out.println("Saindo...");
                         sc.close();
@@ -687,6 +706,77 @@ public class Main {
             
         } catch (ValidationException ve) {
             System.out.println("Erro: " + ve.getMessage());
+        }
+    }
+
+    private static void registerDelivery() {
+        System.out.println("=== Cadastro de Entregador (RF02) ===");
+
+        System.out.print("Nome: ");
+        String name = sc.nextLine();
+
+        System.out.print("Email: ");
+        String email = sc.nextLine();
+
+        System.out.print("CPF: ");
+        String cpf = sc.nextLine();
+
+        System.out.print("Telefone: ");
+        String phone = sc.nextLine();
+
+        System.out.print("CNH: ");
+        String cnh = sc.nextLine();
+
+        System.out.print("Documento do veículo: ");
+        String vehicleDoc = sc.nextLine();
+
+        try {
+            Delivery delivery = deliveryService.register(
+                    name,
+                    email,
+                    cpf,
+                    phone,
+                    cnh,
+                    vehicleDoc
+            );
+
+            System.out.println("\n✅ Entregador cadastrado com sucesso!");
+            System.out.println("ID: " + delivery.getId());
+            System.out.println("Status validação: " + delivery.getValidationStatus());
+
+        } catch (ValidationException e) {
+            System.out.println("Erro: " + e.getMessage());
+        }
+    }
+
+    private static void registerRestaurant() {
+        System.out.println("=== Cadastro de Restaurante ===");
+
+        System.out.print("Nome: ");
+        String name = sc.nextLine();
+
+        System.out.print("Email: ");
+        String email = sc.nextLine();
+
+        System.out.print("CNPJ (14 dígitos): ");
+        String cnpj = sc.nextLine();
+
+        System.out.print("Endereço: ");
+        String address = sc.nextLine();
+
+        try {
+            Restaurant restaurant = restaurantService.register(
+                    name,
+                    email,
+                    cnpj,
+                    address
+            );
+
+            System.out.println("\n✅ Restaurante cadastrado com sucesso!");
+            System.out.println("ID: " + restaurant.getId());
+
+        } catch (ValidationException e) {
+            System.out.println("Erro: " + e.getMessage());
         }
     }
 }
