@@ -1,8 +1,11 @@
 package model;
 
+import java.io.Serializable;
 import java.util.UUID;
 
-public class Delivery {
+public class Delivery implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private String id = UUID.randomUUID().toString();
     private String name;
@@ -17,8 +20,11 @@ public class Delivery {
 
     private boolean active;
 
+    // RF22 - Localização para seleção de entregador mais próximo
+    private Location currentLocation;
+
     public Delivery(String name, String email, String document, String phone,
-                    String cnh, String vehicleDocument) {
+            String cnh, String vehicleDocument) {
         this.name = name;
         this.email = email;
         this.document = document;
@@ -71,5 +77,13 @@ public class Delivery {
 
     public void deactivate() {
         this.active = false;
+    }
+
+    public Location getCurrentLocation() {
+        return currentLocation;
+    }
+
+    public void setCurrentLocation(Location currentLocation) {
+        this.currentLocation = currentLocation;
     }
 }

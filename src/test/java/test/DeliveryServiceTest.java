@@ -19,81 +19,80 @@ class DeliveryServiceTest {
         service = new DeliveryService(new DeliveryRepository());
     }
 
-    // ✅ teste antigo (continua válido)
+    // ✅ RF02 - Teste de cadastro completo com documentos
     @Test
-    void shouldRegisterDelivery() {
+    void shouldRegisterDeliveryWithAllDocuments() {
         Delivery delivery = service.register(
                 "João",
                 "joao@email.com",
                 "12345678901",
-                "999999999"
-        );
+                "999999999",
+                "12345678901",
+                "CRLV123");
 
         assertNotNull(delivery.getId());
+        assertEquals("João", delivery.getName());
     }
 
-    // ✅ teste antigo (continua válido)
+    // ✅ RF02 - Validação de email duplicado
     @Test
     void shouldNotAllowDuplicateEmail() {
         service.register(
                 "João",
                 "joao@email.com",
                 "12345678901",
-                "999999999"
-        );
+                "999999999",
+                "12345678901",
+                "CRLV123");
 
         assertThrows(ValidationException.class, () -> {
             service.register(
                     "Pedro",
                     "joao@email.com",
                     "99999999999",
-                    "88888888"
-            );
+                    "88888888",
+                    "99999999999",
+                    "CRLV456");
         });
     }
 
-    // 🆕 RF02 — entregador aprovado
+    // 🆕 RF02 — entregador aprovado com documentos válidos
     @Test
     void shouldApproveDeliveryWithValidDocuments() {
-        Delivery delivery = service.registerWithDocuments(
+        Delivery delivery = service.register(
                 "Maria",
                 "maria@email.com",
                 "12345678901",
                 "11999999999",
                 "12345678901",
-                "CRLV123"
-        );
+                "CRLV123");
 
         assertEquals(DeliveryStatus.APROVADO, delivery.getValidationStatus());
     }
 
-    // 🆕 RF02 — entregador rejeitado
+    // 🆕 RF02 — entregador rejeitado por CPF inválido
     @Test
     void shouldRejectDeliveryWithInvalidCPF() {
-        Delivery delivery = service.registerWithDocuments(
+        Delivery delivery = service.register(
                 "Maria",
                 "maria2@email.com",
                 "123",
                 "11999999999",
                 "12345678901",
-                "CRLV123"
-        );
+                "CRLV123");
 
         assertEquals(DeliveryStatus.REJEITADO, delivery.getValidationStatus());
     }
 
-    // 🆕 validação de CNH obrigatória
+    // 🆕 RF02 - Validação de CNH obrigatória
     @Test
     void shouldThrowExceptionWhenCNHMissing() {
-        assertThrows(ValidationException.class, () ->
-                service.registerWithDocuments(
-                        "Carlos",
-                        "carlos@email.com",
-                        "12345678901",
-                        "11999999999",
-                        "",
-                        "CRLV123"
-                )
-        );
+        assertThrows(ValidationException.class, () -> service.register(
+                "Carlos",
+                "carlos@email.com",
+                "12345678901",
+                "11999999999",
+                "",
+                "CRLV123"));
     }
 }

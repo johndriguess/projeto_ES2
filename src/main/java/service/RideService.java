@@ -10,11 +10,11 @@ import model.Passenger;
 import model.Location;
 import model.PricingInfo;
 import model.PaymentMethod;
-import model.Receipt; 
-import model.VehicleCategory; 
+import model.Receipt;
+import model.VehicleCategory;
 import util.ValidationException;
 import util.DistanceCalculator;
-import service.PaymentService; 
+import service.PaymentService;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,7 +31,7 @@ public class RideService {
     private final DigitalReceiptService digitalReceiptService;
     private final PaymentService paymentService;
     private RideHistoryRepository historyRepo;
-    
+
     public RideService(RideRepository rideRepo, UserRepository userRepo, PricingService pricingService) {
         this.rideRepo = rideRepo;
         this.userRepo = userRepo;
@@ -39,12 +39,13 @@ public class RideService {
         this.digitalReceiptService = new DigitalReceiptService();
         this.paymentService = new PaymentService();
     }
-    
+
     public void setHistoryRepository(RideHistoryRepository historyRepo) {
         this.historyRepo = historyRepo;
     }
 
-    public Ride createRideRequest(String passengerEmail, String originAddr, String destAddr, String categoryName, PaymentMethod paymentMethod) throws ValidationException, IOException {
+    public Ride createRideRequest(String passengerEmail, String originAddr, String destAddr, String categoryName,
+            PaymentMethod paymentMethod) throws ValidationException, IOException {
         Passenger p = (Passenger) userRepo.findByEmail(passengerEmail);
         if (p == null) {
             throw new ValidationException("Passageiro não encontrado.");
@@ -54,14 +55,14 @@ public class RideService {
 
         Ride ride = new Ride(p.getId(), passengerEmail, originLoc, destLoc);
         ride.setPaymentMethod(paymentMethod);
-            VehicleCategory categoryEnum = resolveCategory(categoryName);
-            if (categoryEnum == null) {
-                throw new ValidationException("Categoria de veículo inválida: " + categoryName);
-            }
-            ride.setVehicleCategory(categoryEnum.name());
+        VehicleCategory categoryEnum = resolveCategory(categoryName);
+        if (categoryEnum == null) {
+            throw new ValidationException("Categoria de veículo inválida: " + categoryName);
+        }
+        ride.setVehicleCategory(categoryEnum.name());
 
         Driver assignedDriver = findAndAssignBestDriver(ride);
-        
+
         if (assignedDriver != null) {
             ride.setDriverId(assignedDriver.getId());
             ride.setStatus(Ride.RideStatus.ACEITA);
@@ -74,7 +75,7 @@ public class RideService {
         rideRepo.add(ride);
         return ride;
     }
-    
+
     private Driver findAndAssignBestDriver(Ride ride) {
         final VehicleCategory categoryEnum;
         try {
@@ -84,44 +85,45 @@ public class RideService {
             return null;
         }
 
-
         final boolean isPremium = categoryEnum.isPremium();
         final Location rideOrigin = ride.getOrigin();
 
         List<Driver> availableDrivers = userRepo.findAll().stream()
-            .filter(u -> u instanceof Driver)
-            .map(u -> (Driver) u)
-            .filter(Driver::isAvailable)
-         .filter(d -> d.getVehicle() != null && d.getVehicle().getCategory() != null && (
-             d.getVehicle().getCategory().equals(categoryEnum.name()) ||
-             d.getVehicle().getCategory().equalsIgnoreCase(categoryEnum.getDisplayName())))
-            .collect(Collectors.toList());
+                .filter(u -> u instanceof Driver)
+                .map(u -> (Driver) u)
+                .filter(Driver::isAvailable)
+                .filter(d -> d.getVehicle() != null && d.getVehicle().getCategory() != null
+                        && (d.getVehicle().getCategory().equals(categoryEnum.name()) ||
+                                d.getVehicle().getCategory().equalsIgnoreCase(categoryEnum.getDisplayName())))
+                .collect(Collectors.toList());
 
         if (availableDrivers.isEmpty()) {
             return null;
         }
 
         Comparator<Driver> comparator;
-        
+
         if (isPremium) {
             comparator = Comparator
                     .comparing(Driver::getAverageRating, Comparator.reverseOrder())
-                    .thenComparing(d -> DistanceCalculator.calculateDistance(d.getCurrentLocation().getAddress(), rideOrigin.getAddress()));
+                    .thenComparing(d -> DistanceCalculator.calculateDistance(d.getCurrentLocation().getAddress(),
+                            rideOrigin.getAddress()));
         } else {
             comparator = Comparator
-                .comparingDouble(d -> DistanceCalculator.calculateDistance(d.getCurrentLocation().getAddress(), rideOrigin.getAddress()));
+                    .comparingDouble(d -> DistanceCalculator.calculateDistance(d.getCurrentLocation().getAddress(),
+                            rideOrigin.getAddress()));
         }
 
         availableDrivers.sort(comparator);
-        
+
         Driver bestDriver = availableDrivers.get(0);
-        bestDriver.setAvailable(false); 
+        bestDriver.setAvailable(false);
         try {
             userRepo.update(bestDriver);
         } catch (IOException e) {
             System.err.println("Erro ao atualizar status do motorista: " + e.getMessage());
         }
-        
+
         return bestDriver;
     }
 
@@ -149,10 +151,11 @@ public class RideService {
         if (driver == null) {
             throw new ValidationException("Motorista não encontrado.");
         }
-        
+
         return rideRepo.findAll().stream()
                 .filter(ride -> ride.getStatus() == Ride.RideStatus.SOLICITADA)
-                .filter(ride -> ride.getVehicleCategory() != null && ride.getVehicleCategory().equalsIgnoreCase(driver.getVehicle().getCategory()))
+                .filter(ride -> ride.getVehicleCategory() != null
+                        && ride.getVehicleCategory().equalsIgnoreCase(driver.getVehicle().getCategory()))
                 .collect(Collectors.toList());
     }
 
@@ -161,10 +164,11 @@ public class RideService {
         if (driver == null) {
             throw new ValidationException("Motorista não encontrado.");
         }
-        
+
         return rideRepo.findAll().stream()
                 .filter(ride -> ride.getStatus() == Ride.RideStatus.SOLICITADA)
-                .filter(ride -> ride.getVehicleCategory() != null && ride.getVehicleCategory().equalsIgnoreCase(driver.getVehicle().getCategory()))
+                .filter(ride -> ride.getVehicleCategory() != null
+                        && ride.getVehicleCategory().equalsIgnoreCase(driver.getVehicle().getCategory()))
                 .collect(Collectors.toList());
     }
 
@@ -178,14 +182,14 @@ public class RideService {
         if (driver == null) {
             throw new ValidationException("Motorista não encontrado.");
         }
-        
+
         if (ride.getDriverId() != null) {
-             throw new ValidationException("Corrida já foi atribuída a outro motorista.");
+            throw new ValidationException("Corrida já foi atribuída a outro motorista.");
         }
 
         ride.setDriverId(driver.getId());
         ride.setStatus(Ride.RideStatus.ACEITA);
-        ride.setDriverCurrentLocation(driver.getCurrentLocation()); 
+        ride.setDriverCurrentLocation(driver.getCurrentLocation());
 
         rideRepo.update(ride);
         System.out.println("Corrida " + rideId + " aceita por " + driver.getName());
@@ -200,13 +204,14 @@ public class RideService {
         if (ride == null) {
             throw new ValidationException("Corrida não encontrada.");
         }
-        
+
         if (ride.getStatus() != Ride.RideStatus.ACEITA) {
             throw new ValidationException("Corrida deve estar aceita para processar pagamento.");
         }
 
         // Calcular preço da corrida
-        List<PricingInfo> pricingList = pricingService.calculateAllPricing(ride.getOrigin().getAddress(), ride.getDestination().getAddress());
+        List<PricingInfo> pricingList = pricingService.calculateAllPricing(ride.getOrigin().getAddress(),
+                ride.getDestination().getAddress());
         PricingInfo ridePricing = null;
         for (PricingInfo p : pricingList) {
             if (p.getCategory().equalsIgnoreCase(ride.getVehicleCategory())) {
@@ -214,21 +219,21 @@ public class RideService {
                 break;
             }
         }
-        
+
         if (ridePricing == null && !pricingList.isEmpty()) {
-            ridePricing = pricingList.get(0); 
+            ridePricing = pricingList.get(0);
         } else if (ridePricing == null) {
             throw new ValidationException("Não foi possível calcular o preço da corrida.");
         }
 
         // Processar pagamento
         boolean paymentSuccess = paymentService.processPayment(ridePricing.getTotalPrice(), ride.getPaymentMethod());
-        
+
         if (paymentSuccess) {
-            System.out.println("✅ Pagamento processado com sucesso!");
+            System.out.println("Pagamento processado com sucesso!");
             return true;
         } else {
-            System.out.println("❌ Falha no processamento do pagamento.");
+            System.out.println("Falha no processamento do pagamento.");
             return false;
         }
     }
@@ -238,10 +243,10 @@ public class RideService {
         if (ride == null) {
             throw new ValidationException("Corrida não encontrada.");
         }
-        
+
         Driver driver = (Driver) userRepo.findById(ride.getDriverId());
         if (driver != null) {
-            driver.setAvailable(true); 
+            driver.setAvailable(true);
             userRepo.update(driver);
         }
 
@@ -249,8 +254,9 @@ public class RideService {
         rideRepo.update(ride);
 
         Passenger passenger = (Passenger) userRepo.findById(ride.getPassengerId());
-        
-        List<PricingInfo> pricingList = pricingService.calculateAllPricing(ride.getOrigin().getAddress(), ride.getDestination().getAddress());
+
+        List<PricingInfo> pricingList = pricingService.calculateAllPricing(ride.getOrigin().getAddress(),
+                ride.getDestination().getAddress());
         PricingInfo ridePricing = null;
         for (PricingInfo p : pricingList) {
             if (p.getCategory().equalsIgnoreCase(ride.getVehicleCategory())) {
@@ -258,21 +264,22 @@ public class RideService {
                 break;
             }
         }
-        
+
         if (ridePricing == null && !pricingList.isEmpty()) {
-            ridePricing = pricingList.get(0); 
+            ridePricing = pricingList.get(0);
         } else if (ridePricing == null) {
             throw new ValidationException("Não foi possível calcular o preço para o recibo.");
         }
 
         Receipt receipt = digitalReceiptService.generateReceipt(ride, passenger, driver, ridePricing, paymentMethod);
-        
+
         digitalReceiptService.sendReceiptToPassenger(receipt);
-        
+
         // Adicionar ao histórico de corridas
         if (historyRepo != null) {
             try {
-                model.RideHistory history = new model.RideHistory(ride, driver != null ? driver.getName() : "Não informado", 
+                model.RideHistory history = new model.RideHistory(ride,
+                        driver != null ? driver.getName() : "Não informado",
                         ridePricing.getTotalPrice(), paymentMethod);
                 historyRepo.add(history);
             } catch (IOException e) {
@@ -282,10 +289,13 @@ public class RideService {
     }
 
     private VehicleCategory resolveCategory(String input) {
-        if (input == null) return null;
+        if (input == null)
+            return null;
         for (VehicleCategory vc : VehicleCategory.values()) {
-            if (vc.name().equalsIgnoreCase(input)) return vc;
-            if (vc.getDisplayName().equalsIgnoreCase(input)) return vc;
+            if (vc.name().equalsIgnoreCase(input))
+                return vc;
+            if (vc.getDisplayName().equalsIgnoreCase(input))
+                return vc;
         }
         // try normalized fallback
         String norm = input.replace(" ", "_").replace("-", "_").replace("Uber", "UBER").toUpperCase();
