@@ -14,6 +14,12 @@ public class RestaurantRepository {
         restaurants.add(restaurant);
     }
 
+    public Optional<Restaurant> findById(String id) {
+        return restaurants.stream()
+                .filter(r -> r.getId().equals(id))
+                .findFirst();
+    }
+
     public Optional<Restaurant> findByEmail(String email) {
         return restaurants.stream()
                 .filter(r -> r.getEmail().equalsIgnoreCase(email))
