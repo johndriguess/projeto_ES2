@@ -12,6 +12,7 @@ public class Restaurant {
     private String cnpj;
     private Location location;
     private boolean active;
+    private boolean open;
     private final List<MenuItem> menu = new ArrayList<>();
 
     public Restaurant(String name, String email, String cnpj, Location location) {
@@ -21,6 +22,7 @@ public class Restaurant {
         this.cnpj = cnpj;
         this.location = location;
         this.active = true;
+        this.open = true;
     }
 
     public String getId() {
@@ -49,6 +51,18 @@ public class Restaurant {
 
     public void deactivate() {
         this.active = false;
+    }
+
+    public boolean isOpen() {
+        return open;
+    }
+
+    public void open() {
+        this.open = true;
+    }
+
+    public void close() {
+        this.open = false;
     }
 
     public void addMenuItem(MenuItem item) {
