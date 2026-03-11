@@ -36,6 +36,18 @@ public class NotificationService {
         return notification;
     }
 
+    // RF?? - Notificar cliente sobre status do pedido
+    public Notification notifyCustomer(String customerEmail, String orderId, String message) {
+        String fullMessage = String.format(
+                "Pedido %s: %s",
+                orderId,
+                message);
+
+        Notification notification = new Notification(customerEmail, "CUSTOMER", fullMessage);
+        notifications.add(notification);
+        return notification;
+    }
+
     // Buscar notificações por destinatário
     public List<Notification> getNotificationsByRecipient(String recipientId) {
         return notifications.stream()

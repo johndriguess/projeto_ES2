@@ -81,6 +81,9 @@ public class DigitalReceiptService {
         if (ride.getOptimizedRoute() != null && !ride.getOptimizedRoute().isEmpty()) {
             d.append("Rota (resumo): ").append(ride.getOptimizedRoute().get(0)).append(" ...\n");
         }
+        if (ride.getEstimatedTimeMinutes() > 0) {
+            d.append("Tempo estimado total: ").append(ride.getEstimatedTimeMinutes()).append(" minutos\n");
+        }
         return d.toString();
     }
 

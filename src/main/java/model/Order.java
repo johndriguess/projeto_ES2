@@ -12,12 +12,14 @@ public class Order implements Serializable {
     private final String id;
     private final String restaurantId;
     private final List<MenuItem> items;
+    private final String customerEmail; // email do cliente que fez o pedido
 
     private double subtotal;
     private double deliveryFee;
     private double discount;
     private double total;
-    private boolean confirmed;
+
+    private OrderStatus status; // AGUARDANDO_CONFIRMACAO, CONFIRMADO, REJEITADO
 
     // RF22 - Atribuição de entregador
     private String assignedDeliveryId;
@@ -26,19 +28,21 @@ public class Order implements Serializable {
     private OrderType orderType;
     private LocalDateTime scheduledTime;
 
-    public Order(String restaurantId, List<MenuItem> items) {
+    public Order(String restaurantId, String customerEmail, List<MenuItem> items) {
         this.id = UUID.randomUUID().toString();
         this.restaurantId = restaurantId;
+        this.customerEmail = customerEmail;
         this.items = items;
-        this.confirmed = false;
+        this.status = OrderStatus.AGUARDANDO_CONFIRMACAO;
         this.orderType = OrderType.IMEDIATO;
     }
 
-    public Order(String restaurantId, List<MenuItem> items, OrderType orderType, LocalDateTime scheduledTime) {
+    public Order(String restaurantId, String customerEmail, List<MenuItem> items, OrderType orderType, LocalDateTime scheduledTime) {
         this.id = UUID.randomUUID().toString();
         this.restaurantId = restaurantId;
+        this.customerEmail = customerEmail;
         this.items = items;
-        this.confirmed = false;
+        this.status = OrderStatus.AGUARDANDO_CONFIRMACAO;
         this.orderType = orderType;
         this.scheduledTime = scheduledTime;
     }
@@ -87,16 +91,60 @@ public class Order implements Serializable {
         this.total = total;
     }
 
+    public boolean isAwaitingConfirmation() {
+        return status == OrderStatus.AGUARDANDO_CONFIRMACAO;
+    }
+
     public boolean isConfirmed() {
-        return confirmed;
+        return status == OrderStatus.CONFIRMADO
+                || status == OrderStatus.PREPARACAO
+                || status == OrderStatus.PRONTO
+                || status == OrderStatus.EM_ENTREGA
+                || status == OrderStatus.ENTREGUE;
+    }
+
+    public boolean isPreparing() {
+        return status == OrderStatus.PREPARACAO;
+    }
+
+    public boolean isReady() {
+        return status == OrderStatus.PRONTO;
+    }
+
+    public boolean isOutForDelivery() {
+        return status == OrderStatus.EM_ENTREGA;
+    }
+
+    public boolean isDelivered() {
+        return status == OrderStatus.ENTREGUE;
+    }
+
+    public boolean isRejected() {
+        return status == OrderStatus.REJEITADO;
     }
 
     public void confirm() {
-        this.confirmed = true;
+        this.status = OrderStatus.CONFIRMADO;
+    }
+
+    public void reject() {
+        this.status = OrderStatus.REJEITADO;
+    }
+
+    public void setStatus(OrderStatus status) {
+        this.status = status;
     }
 
     public String getAssignedDeliveryId() {
         return assignedDeliveryId;
+    }
+
+    public String getCustomerEmail() {
+        return customerEmail;
+    }
+
+    public OrderStatus getStatus() {
+        return status;
     }
 
     public void setAssignedDeliveryId(String assignedDeliveryId) {

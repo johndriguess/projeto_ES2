@@ -2,6 +2,7 @@ package service;
 
 import model.MenuItem;
 import model.Order;
+import model.OrderStatus;
 import model.OrderType;
 import model.Restaurant;
 import repo.OrderRepository;
@@ -30,10 +31,16 @@ public class OrderService {
         this.notificationService = notificationService;
     }
 
+    // agora exige e-mail do cliente que está fazendo o pedido
     public Order createOrder(String restaurantId,
+            String customerEmail,
             List<MenuItem> items,
             double distance,
             double discount) {
+
+        if (customerEmail == null || customerEmail.isBlank()) {
+            throw new ValidationException("Email do cliente é obrigatório.");
+        }
 
         if (items == null || items.isEmpty()) {
             throw new ValidationException("Pedido deve conter pelo menos um item.");
@@ -46,7 +53,7 @@ public class OrderService {
         double deliveryFee = restaurantService.calculateDeliveryFee(distance);
         double total = calculateTotal(subtotal, deliveryFee, discount);
 
-        Order order = new Order(restaurant.getId(), items);
+        Order order = new Order(restaurant.getId(), customerEmail, items);
         order.setSubtotal(subtotal);
         order.setDeliveryFee(deliveryFee);
         order.setDiscount(discount);
@@ -61,7 +68,11 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ValidationException("Pedido não encontrado."));
 
-        order.confirm();
+        if (!order.isAwaitingConfirmation()) {
+            throw new ValidationException("Pedido não está aguardando confirmação.");
+        }
+
+        order.confirm(); // sets CONFIRMADO
 
         // RF22 - Notificar restaurante quando pedido for confirmado
         if (notificationService != null) {
@@ -76,11 +87,25 @@ public class OrderService {
                         order.getId(),
                         orderDetails);
             }
+            // também notificar cliente
+            notificationService.notifyCustomer(
+                    order.getCustomerEmail(),
+                    order.getId(),
+                    "Seu pedido foi CONFIRMADO pelo restaurante.");
         }
+
+        // avançar automaticamente para preparação
+        order.setStatus(OrderStatus.PREPARACAO);
+        if (notificationService != null) {
+            notificationService.notifyCustomer(order.getCustomerEmail(), order.getId(), "Pedido em preparação.");
+        }
+
+        orderRepository.update(order);
     }
 
-    // RF23 - Criar pedido agendado
+    // RF23 - Criar pedido agendado (com email do cliente)
     public Order createScheduledOrder(String restaurantId,
+            String customerEmail,
             List<MenuItem> items,
             double distance,
             double discount,
@@ -105,7 +130,7 @@ public class OrderService {
         double deliveryFee = restaurantService.calculateDeliveryFee(distance);
         double total = calculateTotal(subtotal, deliveryFee, discount);
 
-        Order order = new Order(restaurant.getId(), items, OrderType.AGENDADO, scheduledTime);
+        Order order = new Order(restaurant.getId(), customerEmail, items, OrderType.AGENDADO, scheduledTime);
         order.setSubtotal(subtotal);
         order.setDeliveryFee(deliveryFee);
         order.setDiscount(discount);
@@ -118,11 +143,12 @@ public class OrderService {
 
     // RF23 - Criar pedido imediato (método original mantido para compatibilidade)
     public Order createImmediateOrder(String restaurantId,
+            String customerEmail,
             List<MenuItem> items,
             double distance,
             double discount) {
 
-        Order order = createOrder(restaurantId, items, distance, discount);
+        Order order = createOrder(restaurantId, customerEmail, items, distance, discount);
         order.setOrderType(OrderType.IMEDIATO);
         return order;
     }
@@ -141,10 +167,102 @@ public class OrderService {
                 .collect(java.util.stream.Collectors.toList());
     }
 
+    // RF24? - Listar pedidos pendentes (AGUARDANDO_CONFIRMACAO) de um restaurante
+    public List<Order> getPendingOrdersForRestaurant(String restaurantId) {
+        if (restaurantId == null || restaurantId.isBlank()) {
+            throw new ValidationException("ID do restaurante é obrigatório.");
+        }
+
+        // valida existência do restaurante
+        if (restaurantRepository.findById(restaurantId).isEmpty()) {
+            throw new ValidationException("Restaurante não encontrado.");
+        }
+
+        return orderRepository.findAll().stream()
+                .filter(o -> restaurantId.equals(o.getRestaurantId()))
+                .filter(Order::isAwaitingConfirmation)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     // Buscar pedido por ID
+    public void rejectOrder(String orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ValidationException("Pedido não encontrado."));
+
+        if (!order.isAwaitingConfirmation()) {
+            throw new ValidationException("Pedido não está aguardando confirmação.");
+        }
+
+        order.reject();
+
+        if (notificationService != null) {
+            // notificar restaurante também? poderia ser redundante
+            notificationService.notifyCustomer(
+                    order.getCustomerEmail(),
+                    order.getId(),
+                    "Seu pedido foi REJEITADO pelo restaurante.");
+        }
+
+        orderRepository.update(order);
+    }
+
     public Order findById(String orderId) {
         return orderRepository.findById(orderId)
                 .orElseThrow(() -> new ValidationException("Pedido não encontrado."));
+    }
+
+    // fornece status atual do pedido
+    public OrderStatus getOrderStatus(String orderId) {
+        return findById(orderId).getStatus();
+    }
+
+    // transições de status
+    public void startPreparation(String orderId) {
+        Order order = findById(orderId);
+        if (!order.isConfirmed()) {
+            throw new ValidationException("Pedido precisa ser confirmado antes de iniciar preparação.");
+        }
+        order.setStatus(OrderStatus.PREPARACAO);
+        orderRepository.update(order);
+        if (notificationService != null) {
+            notificationService.notifyCustomer(order.getCustomerEmail(), order.getId(), "Pedido em preparação.");
+        }
+    }
+
+    public void markReady(String orderId) {
+        Order order = findById(orderId);
+        if (!order.isPreparing()) {
+            throw new ValidationException("Pedido deve estar em preparação para ser marcado como pronto.");
+        }
+        order.setStatus(OrderStatus.PRONTO);
+        orderRepository.update(order);
+        if (notificationService != null) {
+            notificationService.notifyCustomer(order.getCustomerEmail(), order.getId(), "Pedido pronto para retirada.");
+        }
+    }
+
+    public void dispatchOrder(String orderId) {
+        Order order = findById(orderId);
+        if (!order.isReady()) {
+            throw new ValidationException("Pedido deve estar pronto para ser despachado.");
+        }
+        order.setStatus(OrderStatus.EM_ENTREGA);
+        orderRepository.update(order);
+        if (notificationService != null) {
+            notificationService.notifyCustomer(order.getCustomerEmail(), order.getId(), "Pedido em entrega.");
+        }
+    }
+
+    public void deliverOrder(String orderId) {
+        Order order = findById(orderId);
+        if (!order.isOutForDelivery()) {
+            throw new ValidationException("Pedido não está em entrega.");
+        }
+        order.setStatus(OrderStatus.ENTREGUE);
+        orderRepository.update(order);
+        if (notificationService != null) {
+            notificationService.notifyCustomer(order.getCustomerEmail(), order.getId(), "Pedido entregue.");
+        }
     }
 
     public double calculateSubtotal(List<MenuItem> items) {

@@ -105,4 +105,13 @@ class NotificationServiceTest {
 
         assertEquals(0, service.getAllNotifications().size());
     }
+
+    @Test
+    void shouldNotifyCustomer() {
+        Notification n = service.notifyCustomer("cliente@example.com", "order-99", "Seu pedido foi confirmado.");
+        assertNotNull(n);
+        assertEquals("cliente@example.com", n.getRecipientId());
+        assertEquals("CUSTOMER", n.getRecipientType());
+        assertTrue(n.getMessage().contains("order-99"));
+    }
 }

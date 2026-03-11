@@ -4,6 +4,7 @@ import model.Delivery;
 import model.DeliveryStatus;
 import model.Location;
 import model.Order;
+import model.OrderStatus;
 import repo.DeliveryRepository;
 import util.ValidationException;
 
@@ -66,6 +67,7 @@ public class DeliveryAssignmentService {
 
         // Atribuir entregador ao pedido
         order.setAssignedDeliveryId(nearestDelivery.getId());
+        order.setStatus(OrderStatus.EM_ENTREGA);
 
         // Notificar o entregador
         notificationService.notifyDelivery(

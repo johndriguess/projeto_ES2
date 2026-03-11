@@ -1,12 +1,14 @@
 package test;
 
 import model.*;
+import model.OrderStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import repo.DeliveryRepository;
 import service.DeliveryAssignmentService;
 import service.DeliveryService;
 import service.NotificationService;
+import model.Notification;
 import util.ValidationException;
 
 import java.util.List;
@@ -80,8 +82,8 @@ class DeliveryAssignmentServiceTest {
                 "11999999996", "12345678904", "CRLV101");
         delivery.setCurrentLocation(new Location("Local", "", 0, 0));
 
-        // Criar pedido
-        Order order = new Order("restaurant-123", List.of(
+        // Criar pedido (incluindo email do cliente)
+        Order order = new Order("restaurant-123", "cust@delivery.com", List.of(
                 new MenuItem("Pizza", "Calabresa", 40.0)));
         order.confirm();
 
@@ -96,6 +98,8 @@ class DeliveryAssignmentServiceTest {
 
         assertNotNull(order.getAssignedDeliveryId());
         assertEquals(delivery.getId(), order.getAssignedDeliveryId());
+        assertTrue(order.isOutForDelivery());
+        assertEquals(OrderStatus.EM_ENTREGA, order.getStatus());
 
         // Verificar se notificação foi enviada
         List<Notification> notifications = notificationService.getNotificationsByRecipient(delivery.getId());

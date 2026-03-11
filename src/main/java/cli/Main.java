@@ -126,6 +126,9 @@ public class Main {
             System.out.println("25 - Fazer Pedido Agendado (RF23)");
             System.out.println("26 - Ver Notificações");
             System.out.println("27 - Atualizar Localização do Entregador");
+            System.out.println("28 - Listar Pedidos Pendentes do Restaurante");
+            System.out.println("29 - Consultar Status do Pedido");
+            System.out.println("30 - Atualizar Status do Pedido");
             System.out.println("0 - Sair");
             System.out.print("> ");
             String opt = sc.nextLine().trim();
@@ -212,6 +215,15 @@ public class Main {
                         break;
                     case "27":
                         updateDeliveryLocation();
+                        break;
+                    case "28":
+                        listPendingOrders();
+                        break;
+                    case "29":
+                        viewOrderStatus();
+                        break;
+                    case "30":
+                        updateOrderStatusCLI();
                         break;
                     case "0":
                         System.out.println("Saindo...");
@@ -353,13 +365,20 @@ public class Main {
                 throw new ValidationException("Você não é o motorista designado para esta corrida.");
             }
             if (ride.getOptimizedRoute() == null || ride.getOptimizedRoute().isEmpty()) {
-                System.out.println("A rota otimizada ainda não está disponível.");
-                return;
+                // try to calculate now (route may have been removed or not yet created)
+                try {
+                    rideService.generateRouteForRide(rideId);
+                    ride = rideService.getRideById(rideId);
+                } catch (Exception e) {
+                    System.out.println("A rota otimizada ainda não está disponível.");
+                    return;
+                }
             }
             System.out.println("--- Rota Otimizada ---");
             for (String step : ride.getOptimizedRoute()) {
                 System.out.println("- " + step);
             }
+            System.out.println("Tempo estimado total: " + ride.getEstimatedTimeMinutes() + " minutos");
             System.out.println("----------------------");
         } catch (ValidationException ve) {
             System.out.println("Erro: " + ve.getMessage());
@@ -1055,10 +1074,18 @@ public class Main {
         System.out.println("=== Fazer Pedido Imediato (RF21 + RF23) ===");
 
         try {
-            // Listar restaurantes e permitir seleção
+            // lista restaurantes e permitir seleção
             String restaurantId = selectRestaurantFromList();
             if (restaurantId == null) {
                 return; // Usuário cancelou ou não há restaurantes
+            }
+
+            // pedir email do cliente
+            System.out.print("Digite seu email: ");
+            String customerEmail = sc.nextLine().trim();
+            if (customerEmail.isEmpty()) {
+                System.out.println("Email é obrigatório. Pedido cancelado.");
+                return;
             }
 
             // Buscar restaurante para mostrar o menu
@@ -1126,7 +1153,7 @@ public class Main {
             }
 
             // Criar pedido
-            Order order = orderService.createOrder(restaurantId, selectedItems, distance, discount);
+            Order order = orderService.createOrder(restaurantId, customerEmail, selectedItems, distance, discount);
 
             System.out.println("\n--- Resumo do Pedido ---");
             System.out.println("ID do pedido: " + order.getId());
@@ -1186,10 +1213,18 @@ public class Main {
         System.out.println("=== Fazer Pedido Agendado (RF23) ===");
 
         try {
-            // Listar restaurantes e permitir seleção
+            // listar restaurantes e permitir seleção
             String restaurantId = selectRestaurantFromList();
             if (restaurantId == null) {
                 return; // Usuário cancelou ou não há restaurantes
+            }
+
+            // pedir email do cliente
+            System.out.print("Digite seu email: ");
+            String customerEmail = sc.nextLine().trim();
+            if (customerEmail.isEmpty()) {
+                System.out.println("Email é obrigatório. Pedido cancelado.");
+                return;
             }
 
             // Buscar restaurante para mostrar o menu
@@ -1270,7 +1305,7 @@ public class Main {
             }
 
             // Criar pedido agendado
-            Order order = orderService.createScheduledOrder(restaurantId, selectedItems, distance, discount,
+            Order order = orderService.createScheduledOrder(restaurantId, customerEmail, selectedItems, distance, discount,
                     scheduledTime);
 
             System.out.println("\n--- Resumo do Pedido Agendado ---");
@@ -1285,6 +1320,7 @@ public class Main {
             System.out.printf("Taxa de entrega: R$ %.2f\n", order.getDeliveryFee());
             System.out.printf("Desconto: R$ %.2f\n", order.getDiscount());
             System.out.printf("TOTAL: R$ %.2f\n", order.getTotal());
+            System.out.println("Status: " + order.getStatus());
 
             System.out.print("\nConfirmar pedido agendado? (s/n): ");
             String confirm = sc.nextLine().trim().toLowerCase();
@@ -1324,6 +1360,101 @@ public class Main {
             System.out.println("Erro: " + e.getMessage());
         } catch (NumberFormatException e) {
             System.out.println("Erro: Valor numérico inválido.");
+        }
+    }
+
+    private static void viewOrderStatus() {
+        System.out.println("=== Consultar Status do Pedido ===");
+        System.out.print("Digite o ID do pedido: ");
+        String orderId = sc.nextLine().trim();
+        try {
+            Order order = orderService.findById(orderId);
+            System.out.println("Pedido " + orderId + " status: " + order.getStatus());
+        } catch (ValidationException e) {
+            System.out.println("Erro: " + e.getMessage());
+        }
+    }
+
+    private static void updateOrderStatusCLI() {
+        System.out.println("=== Atualizar Status do Pedido ===");
+        System.out.print("Digite o ID do pedido: ");
+        String orderId = sc.nextLine().trim();
+        try {
+            Order order = orderService.findById(orderId);
+            System.out.println("Status atual: " + order.getStatus());
+            System.out.println("Opções de atualização:");
+            System.out.println("1 - Preparação");
+            System.out.println("2 - Pronto");
+            System.out.println("3 - Em entrega");
+            System.out.println("4 - Entregue");
+            System.out.print("Escolha: ");
+            String choice = sc.nextLine().trim();
+            switch (choice) {
+                case "1":
+                    orderService.startPreparation(orderId);
+                    System.out.println("Status definido para PREPARACAO");
+                    break;
+                case "2":
+                    orderService.markReady(orderId);
+                    System.out.println("Status definido para PRONTO");
+                    break;
+                case "3":
+                    orderService.dispatchOrder(orderId);
+                    System.out.println("Status definido para EM_ENTREGA");
+                    break;
+                case "4":
+                    orderService.deliverOrder(orderId);
+                    System.out.println("Status definido para ENTREGUE");
+                    break;
+                default:
+                    System.out.println("Opção inválida.");
+            }
+        } catch (ValidationException e) {
+            System.out.println("Erro: " + e.getMessage());
+        }
+    }
+
+    private static void listPendingOrders() {
+        System.out.println("=== Listar Pedidos Pendentes do Restaurante ===");
+        System.out.print("Digite o ID do restaurante: ");
+        String restaurantId = sc.nextLine().trim();
+        try {
+            Restaurant restaurant = restaurantRepo.findById(restaurantId)
+                    .orElseThrow(() -> new ValidationException("Restaurante não encontrado."));
+
+            List<Order> pendings = orderService.getPendingOrdersForRestaurant(restaurantId);
+            if (pendings.isEmpty()) {
+                System.out.println("Nenhum pedido pendente para este restaurante.");
+                return;
+            }
+
+            System.out.println("\n--- Pedidos Pendentes ---");
+            for (Order o : pendings) {
+                System.out.printf("ID: %s - Total: R$ %.2f - Itens: %d - Tipo: %s\n",
+                        o.getId(), o.getTotal(), o.getItems().size(),
+                        o.isImmediate() ? "Imediato" : "Agendado");
+            }
+
+            System.out.print("\nDeseja confirmar ou rejeitar algum pedido? (c/r) ");
+            String action = sc.nextLine().trim().toLowerCase();
+            if (action.equals("c") || action.equals("r")) {
+                System.out.print("Digite o ID do pedido: ");
+                String orderId = sc.nextLine().trim();
+                try {
+                    if (action.equals("c")) {
+                        orderService.confirmOrder(orderId);
+                        System.out.println("Pedido confirmado.");
+                    } else {
+                        orderService.rejectOrder(orderId);
+                        System.out.println("Pedido rejeitado.");
+                    }
+                } catch (ValidationException ex) {
+                    System.out.println("Erro: " + ex.getMessage());
+                }
+            }
+
+        } catch (ValidationException e) {
+            System.out.println("Erro: " + e.getMessage());
         }
     }
 

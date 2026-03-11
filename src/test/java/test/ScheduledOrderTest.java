@@ -1,6 +1,7 @@
 package test;
 
 import model.*;
+import model.OrderStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import repo.OrderRepository;
@@ -43,10 +44,14 @@ class ScheduledOrderTest {
 
         Order order = orderService.createScheduledOrder(
                 restaurant.getId(),
+                "cliente@teste.com",
                 restaurant.getMenu(),
                 5,
                 0,
                 scheduledTime);
+        assertEquals(OrderStatus.AGUARDANDO_CONFIRMACAO, order.getStatus());
+        orderService.confirmOrder(order.getId());
+        assertTrue(order.isPreparing());
 
         assertNotNull(order);
         assertNotNull(order.getId());
@@ -60,6 +65,7 @@ class ScheduledOrderTest {
     void shouldCreateImmediateOrder() {
         Order order = orderService.createImmediateOrder(
                 restaurant.getId(),
+                "cliente@teste.com",
                 restaurant.getMenu(),
                 5,
                 0);
@@ -77,6 +83,7 @@ class ScheduledOrderTest {
 
         assertThrows(ValidationException.class, () -> orderService.createScheduledOrder(
                 restaurant.getId(),
+                "cliente@teste.com",
                 restaurant.getMenu(),
                 5,
                 0,
@@ -87,6 +94,7 @@ class ScheduledOrderTest {
     void shouldRequireScheduledTimeForScheduledOrders() {
         assertThrows(ValidationException.class, () -> orderService.createScheduledOrder(
                 restaurant.getId(),
+                "cliente@teste.com",
                 restaurant.getMenu(),
                 5,
                 0,
@@ -98,6 +106,7 @@ class ScheduledOrderTest {
         // Criar pedido imediato
         orderService.createImmediateOrder(
                 restaurant.getId(),
+                "cliente@teste.com",
                 restaurant.getMenu(),
                 5,
                 0);
@@ -105,6 +114,7 @@ class ScheduledOrderTest {
         // Criar pedido agendado
         orderService.createScheduledOrder(
                 restaurant.getId(),
+                "cliente@teste.com",
                 restaurant.getMenu(),
                 5,
                 0,
@@ -121,6 +131,7 @@ class ScheduledOrderTest {
         // Criar pedido imediato
         orderService.createImmediateOrder(
                 restaurant.getId(),
+                "cliente@teste.com",
                 restaurant.getMenu(),
                 5,
                 0);
@@ -128,6 +139,7 @@ class ScheduledOrderTest {
         // Criar pedido agendado
         orderService.createScheduledOrder(
                 restaurant.getId(),
+                "cliente@teste.com",
                 restaurant.getMenu(),
                 5,
                 0,
@@ -149,10 +161,12 @@ class ScheduledOrderTest {
 
         Order order = orderService.createScheduledOrder(
                 restaurant.getId(),
+                "cliente@outro.com",
                 List.of(new MenuItem("Pizza", "Margherita", 35)),
                 8,
                 5,
                 tomorrow2PM);
+        assertEquals(OrderStatus.AGUARDANDO_CONFIRMACAO, order.getStatus());
 
         assertNotNull(order.getScheduledTime());
         assertEquals(14, order.getScheduledTime().getHour());
@@ -163,6 +177,7 @@ class ScheduledOrderTest {
     void shouldCalculatePriceCorrectlyForScheduledOrders() {
         Order order = orderService.createScheduledOrder(
                 restaurant.getId(),
+                "cliente@ok.com",
                 restaurant.getMenu(),
                 5,
                 10,

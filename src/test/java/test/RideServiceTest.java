@@ -93,6 +93,16 @@ public class RideServiceTest {
         assertEquals(Ride.RideStatus.ACEITA, ride.getStatus());
         Driver driver = (Driver) userRepo.findById(driverNear.getId());
         assertFalse(driver.isAvailable());
+
+        // route information should be generated when the ride is created and/or accepted
+        assertNotNull(ride.getOptimizedRoute());
+        assertFalse(ride.getOptimizedRoute().isEmpty());
+        assertTrue(ride.getEstimatedTimeMinutes() > 0);
+
+        // manually regenerate route (should not crash) and persist
+        rideService.generateRouteForRide(ride.getId());
+        Ride fromRepo = rideRepo.findById(ride.getId());
+        assertNotNull(fromRepo.getOptimizedRoute());
     }
 
     @Test
@@ -144,6 +154,10 @@ public class RideServiceTest {
 
         assertNull(ride.getDriverId());
         assertEquals(Ride.RideStatus.SOLICITADA, ride.getStatus());
+        // still route info should exist (origin->dest)
+        assertNotNull(ride.getOptimizedRoute());
+        assertEquals(1, ride.getOptimizedRoute().size());
+        assertTrue(ride.getEstimatedTimeMinutes() > 0);
     }
 
     @Test

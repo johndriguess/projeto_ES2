@@ -23,6 +23,9 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Comparator;
+import java.util.ArrayList;
+
+import service.RouteService;
 
 public class RideService {
     private final RideRepository rideRepo;
@@ -31,6 +34,7 @@ public class RideService {
     private final DigitalReceiptService digitalReceiptService;
     private final PaymentService paymentService;
     private RideHistoryRepository historyRepo;
+    private final RouteService routeService;
 
     public RideService(RideRepository rideRepo, UserRepository userRepo, PricingService pricingService) {
         this.rideRepo = rideRepo;
@@ -38,6 +42,7 @@ public class RideService {
         this.pricingService = pricingService;
         this.digitalReceiptService = new DigitalReceiptService();
         this.paymentService = new PaymentService();
+        this.routeService = new RouteService();
     }
 
     public void setHistoryRepository(RideHistoryRepository historyRepo) {
@@ -71,6 +76,9 @@ public class RideService {
         } else {
             System.out.println("Nenhum motorista disponível. A corrida ficará solicitada.");
         }
+
+        // generate initial route / eta (may be partial if driver not yet defined)
+        routeService.generateRoute(ride);
 
         rideRepo.add(ride);
         return ride;
@@ -191,12 +199,26 @@ public class RideService {
         ride.setStatus(Ride.RideStatus.ACEITA);
         ride.setDriverCurrentLocation(driver.getCurrentLocation());
 
+        // recalc route now that driver location is known
+        routeService.generateRoute(ride);
+
         rideRepo.update(ride);
         System.out.println("Corrida " + rideId + " aceita por " + driver.getName());
     }
 
     public void refuseRide(String rideId, String driverEmail) {
         System.out.println("Motorista " + driverEmail + " recusou a corrida " + rideId);
+    }
+
+    /**
+     * Recalculates the route information for a ride and persists the changes.
+     * This can be used when the ride was created earlier without a driver or when
+     * the driver's location has changed.
+     */
+    public void generateRouteForRide(String rideId) throws ValidationException, IOException {
+        Ride ride = getRideById(rideId);
+        routeService.generateRoute(ride);
+        rideRepo.update(ride);
     }
 
     public boolean processRidePayment(String rideId) throws ValidationException {
