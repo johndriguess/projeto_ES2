@@ -18,6 +18,9 @@ public class DeliveryMenu {
     public void show() {
         while (true) {
             System.out.println("\n=== Menu Entregador - " + delivery.getName() + " ===");
+            double avg = context.getAvaliacaoService().getAverageRatingForDelivery(delivery.getId());
+            int count = context.getAvaliacaoService().getTotalRatingsForDelivery(delivery.getId());
+            System.out.printf("Avaliação média: %.2f (%d avaliações)\n", avg, count);
             System.out.println("Status: " + (delivery.isActive() ? "Ativo" : "Inativo"));
             if (delivery.getCurrentLocation() != null) {
                 System.out.println("Localização: " + delivery.getCurrentLocation().getAddress());
@@ -26,6 +29,7 @@ public class DeliveryMenu {
             System.out.println("2 - Ver Notificações");
             System.out.println("3 - Alternar Disponibilidade");
             System.out.println("4 - Ver Minhas Entregas");
+            System.out.println("5 - Avaliar Cliente/Restaurante");
             System.out.println("0 - Sair");
             System.out.print("> ");
 
@@ -44,6 +48,9 @@ public class DeliveryMenu {
                         break;
                     case "4":
                         viewMyDeliveries();
+                        break;
+                    case "5":
+                        rateOrderParticipants();
                         break;
                     case "0":
                         System.out.println("Saindo...");
@@ -119,5 +126,9 @@ public class DeliveryMenu {
         if (!found) {
             System.out.println("Você não tem entregas no momento.");
         }
+    }
+
+    private void rateOrderParticipants() {
+        SharedMenus.deliveryRateOrder(context, delivery);
     }
 }

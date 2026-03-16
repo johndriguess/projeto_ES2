@@ -33,6 +33,7 @@ public class PassengerMenu {
             System.out.println("11 - Fazer Pedido Imediato");
             System.out.println("12 - Fazer Pedido Agendado");
             System.out.println("13 - Consultar Status do Pedido");
+            System.out.println("14 - Avaliar Entregador/Restaurante");
             System.out.println("0 - Sair");
             System.out.print("> ");
 
@@ -78,6 +79,9 @@ public class PassengerMenu {
                         break;
                     case "13":
                         viewOrderStatus();
+                        break;
+                    case "14":
+                        rateOrderParticipants();
                         break;
                     case "0":
                         System.out.println("Saindo...");
@@ -138,6 +142,14 @@ public class PassengerMenu {
             System.out.println("Tempo estimado: " + selectedPricing.getFormattedTime());
             System.out.println("Forma de Pagamento: " + selectedPaymentMethod.getDisplayName());
             System.out.println("Status: " + ride.getStatus().getDisplayName());
+            if (ride.getDriverId() != null) {
+                Driver assignedDriver = (Driver) context.getUserRepo().findById(ride.getDriverId());
+                if (assignedDriver != null) {
+                    double driverRating = assignedDriver.getAverageRating();
+                    System.out.println("Motorista atribuído: " + assignedDriver.getName());
+                    System.out.printf("Nota do motorista: %.2f\n", driverRating);
+                }
+            }
         } else {
             System.out.println("Opção inválida.");
         }
@@ -207,6 +219,16 @@ public class PassengerMenu {
             Ride ride = context.getRideService().getRideById(rideId);
             System.out.println("--- Acompanhamento de Corrida ---");
             System.out.println("Status: " + ride.getStatus().getDisplayName());
+            if (ride.getDriverId() != null) {
+                Driver assignedDriver = (Driver) context.getUserRepo().findById(ride.getDriverId());
+                if (assignedDriver != null) {
+                    System.out.println("Motorista: " + assignedDriver.getName());
+                    System.out.printf("Nota do motorista: %.2f\n", assignedDriver.getAverageRating());
+                }
+            }
+            if (ride.getStatus() == Ride.RideStatus.AGUARDANDO_ACEITE_MOTORISTA) {
+                System.out.println("A corrida foi atribuída e está aguardando o aceite do motorista.");
+            }
             if (ride.getStatus() == Ride.RideStatus.ACEITA || ride.getStatus() == Ride.RideStatus.EM_ANDAMENTO) {
                 if (ride.getDriverCurrentLocation() != null) {
                     System.out
@@ -309,5 +331,9 @@ public class PassengerMenu {
 
     private void viewOrderStatus() {
         SharedMenus.viewOrderStatus(context, passenger.getEmail());
+    }
+
+    private void rateOrderParticipants() {
+        SharedMenus.customerRateOrder(context, passenger.getEmail());
     }
 }

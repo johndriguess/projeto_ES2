@@ -16,6 +16,7 @@ public class MenuContext {
     private final DeliveryRepository deliveryRepo;
     private final RestaurantRepository restaurantRepo;
     private final OrderRepository orderRepo;
+    private final AvaliacaoRepository avaliacaoRepo;
 
     private final AuthService auth;
     private final RideService rideService;
@@ -25,6 +26,7 @@ public class MenuContext {
     private final DeliveryService deliveryService;
     private final RestaurantService restaurantService;
     private final OrderService orderService;
+    private final AvaliacaoService avaliacaoService;
     private final NotificationService notificationService;
     private final DeliveryAssignmentService assignmentService;
 
@@ -33,10 +35,12 @@ public class MenuContext {
     public MenuContext(UserRepository userRepo, VehicleRepository vehicleRepo,
             RideRepository rideRepo, RideHistoryRepository historyRepo,
             DeliveryRepository deliveryRepo, RestaurantRepository restaurantRepo,
-            OrderRepository orderRepo, AuthService auth, RideService rideService,
+            OrderRepository orderRepo, AvaliacaoRepository avaliacaoRepo,
+            AuthService auth, RideService rideService,
             PricingService pricingService, RatingService ratingService,
             RideHistoryService historyService, DeliveryService deliveryService,
             RestaurantService restaurantService, OrderService orderService,
+            AvaliacaoService avaliacaoService,
             NotificationService notificationService, DeliveryAssignmentService assignmentService,
             Scanner scanner) {
         this.userRepo = userRepo;
@@ -46,6 +50,7 @@ public class MenuContext {
         this.deliveryRepo = deliveryRepo;
         this.restaurantRepo = restaurantRepo;
         this.orderRepo = orderRepo;
+        this.avaliacaoRepo = avaliacaoRepo;
         this.auth = auth;
         this.rideService = rideService;
         this.pricingService = pricingService;
@@ -54,6 +59,7 @@ public class MenuContext {
         this.deliveryService = deliveryService;
         this.restaurantService = restaurantService;
         this.orderService = orderService;
+        this.avaliacaoService = avaliacaoService;
         this.notificationService = notificationService;
         this.assignmentService = assignmentService;
         this.scanner = scanner;
@@ -87,6 +93,10 @@ public class MenuContext {
         return orderRepo;
     }
 
+    public AvaliacaoRepository getAvaliacaoRepo() {
+        return avaliacaoRepo;
+    }
+
     public AuthService getAuth() {
         return auth;
     }
@@ -117,6 +127,10 @@ public class MenuContext {
 
     public OrderService getOrderService() {
         return orderService;
+    }
+
+    public AvaliacaoService getAvaliacaoService() {
+        return avaliacaoService;
     }
 
     public NotificationService getNotificationService() {

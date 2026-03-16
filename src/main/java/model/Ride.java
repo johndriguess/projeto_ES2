@@ -3,6 +3,7 @@ package model;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -10,25 +11,26 @@ public class Ride implements Serializable {
     private static final long serialVersionUID = 1L;
     private String driverId;
     private Location driverCurrentLocation;
-    
+
     public enum RideStatus {
         SOLICITADA("Solicitada"),
+        AGUARDANDO_ACEITE_MOTORISTA("Aguardando aceite do motorista"),
         ACEITA("Aceita"),
         EM_ANDAMENTO("Em Andamento"),
         FINALIZADA("Finalizada"),
         CANCELADA("Cancelada");
-        
+
         private final String displayName;
-        
+
         RideStatus(String displayName) {
             this.displayName = displayName;
         }
-        
+
         public String getDisplayName() {
             return displayName;
         }
     }
-    
+
     private String id;
     private String passengerId;
     private String passengerEmail;
@@ -39,11 +41,12 @@ public class Ride implements Serializable {
     private String vehicleCategory;
     private int estimatedTimeMinutes;
     private List<String> optimizedRoute;
+    private List<String> refusedDriverIds;
     private PaymentMethod paymentMethod;
-    
+
     private boolean passengerHasRated = false;
     private boolean driverHasRated = false;
-    
+
     public Ride(String passengerId, String passengerEmail, Location origin, Location destination) {
         this.id = UUID.randomUUID().toString();
         this.passengerId = passengerId;
@@ -53,32 +56,33 @@ public class Ride implements Serializable {
         this.status = RideStatus.SOLICITADA;
         this.requestTime = LocalDateTime.now();
         this.vehicleCategory = null;
+        this.refusedDriverIds = new ArrayList<>();
     }
-    
+
     public String getId() {
         return id;
     }
-    
+
     public String getPassengerId() {
         return passengerId;
     }
-    
+
     public String getPassengerEmail() {
         return passengerEmail;
     }
-    
+
     public Location getOrigin() {
         return origin;
     }
-    
+
     public Location getDestination() {
         return destination;
     }
-    
+
     public RideStatus getStatus() {
         return status;
     }
-    
+
     public LocalDateTime getRequestTime() {
         return requestTime;
     }
@@ -86,27 +90,27 @@ public class Ride implements Serializable {
     public void setRequestTime(LocalDateTime requestTime) {
         this.requestTime = requestTime;
     }
-    
+
     public String getVehicleCategory() {
         return vehicleCategory;
     }
-    
+
     public void setStatus(RideStatus status) {
         this.status = status;
     }
-    
+
     public void setVehicleCategory(String vehicleCategory) {
         this.vehicleCategory = vehicleCategory;
     }
-    
+
     public String getDriverId() {
         return driverId;
     }
-    
+
     public void setDriverId(String driverId) {
         this.driverId = driverId;
     }
-    
+
     public Location getDriverCurrentLocation() {
         return driverCurrentLocation;
     }
@@ -114,7 +118,7 @@ public class Ride implements Serializable {
     public void setDriverCurrentLocation(Location driverCurrentLocation) {
         this.driverCurrentLocation = driverCurrentLocation;
     }
-    
+
     public int getEstimatedTimeMinutes() {
         return estimatedTimeMinutes;
     }
@@ -122,13 +126,29 @@ public class Ride implements Serializable {
     public void setEstimatedTimeMinutes(int estimatedTimeMinutes) {
         this.estimatedTimeMinutes = estimatedTimeMinutes;
     }
-    
+
     public List<String> getOptimizedRoute() {
         return optimizedRoute;
     }
 
     public void setOptimizedRoute(List<String> optimizedRoute) {
         this.optimizedRoute = optimizedRoute;
+    }
+
+    public List<String> getRefusedDriverIds() {
+        if (refusedDriverIds == null) {
+            refusedDriverIds = new ArrayList<>();
+        }
+        return refusedDriverIds;
+    }
+
+    public void addRefusedDriverId(String driverId) {
+        if (driverId == null || driverId.isBlank()) {
+            return;
+        }
+        if (!getRefusedDriverIds().contains(driverId)) {
+            getRefusedDriverIds().add(driverId);
+        }
     }
 
     public PaymentMethod getPaymentMethod() {
@@ -138,7 +158,7 @@ public class Ride implements Serializable {
     public void setPaymentMethod(PaymentMethod paymentMethod) {
         this.paymentMethod = paymentMethod;
     }
-    
+
     public boolean hasPassengerRated() {
         return passengerHasRated;
     }
@@ -154,13 +174,14 @@ public class Ride implements Serializable {
     public void setDriverHasRated(boolean driverHasRated) {
         this.driverHasRated = driverHasRated;
     }
-    
+
     @Override
     public String toString() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-        return String.format("Ride[id=%s, passenger=%s, origin=%s, destination=%s, status=%s, time=%s, category=%s, payment=%s]",
-                id, passengerEmail, origin.getAddress(), destination.getAddress(), 
-                status.getDisplayName(), requestTime.format(formatter), 
+        return String.format(
+                "Ride[id=%s, passenger=%s, origin=%s, destination=%s, status=%s, time=%s, category=%s, payment=%s]",
+                id, passengerEmail, origin.getAddress(), destination.getAddress(),
+                status.getDisplayName(), requestTime.format(formatter),
                 vehicleCategory != null ? vehicleCategory : "Nao definida",
                 paymentMethod != null ? paymentMethod.getDisplayName() : "Nao definido");
     }

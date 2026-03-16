@@ -85,24 +85,30 @@ public class EndToEndIntegrationTest {
         userRepo.update(d);
 
         // 3) solicitar corrida; como existe motorista compatível, espera-se atribuição
-        // imediata
+        // com aceite pendente do motorista
         Ride ride = rideService.createRideRequest(p.getEmail(), "Rua Origem", "Rua Destino",
                 VehicleCategory.UBER_X.name(), PaymentMethod.CASH);
 
         assertNotNull(ride);
-        assertEquals(Ride.RideStatus.ACEITA, ride.getStatus(),
-                "Esperava-se que a corrida fosse aceita pois há motorista disponível");
+        assertEquals(Ride.RideStatus.AGUARDANDO_ACEITE_MOTORISTA, ride.getStatus(),
+                "Esperava-se que a corrida aguardasse o aceite do motorista");
         assertNotNull(ride.getDriverId(), "Motorista deveria ter sido atribuído");
 
         // Confirma que o motorista foi marcado como indisponível
         Driver assigned = (Driver) userRepo.findById(ride.getDriverId());
         assertFalse(assigned.isAvailable(), "Motorista deveria estar indisponível após atribuição");
 
-        // 4) processar pagamento (simula captura)
+        // 4) motorista aceita explicitamente a corrida
+        rideService.acceptRide(ride.getId(), d.getEmail());
+        Ride acceptedRide = rideRepo.findById(ride.getId());
+        assertEquals(Ride.RideStatus.ACEITA, acceptedRide.getStatus(),
+                "Após o aceite do motorista a corrida deve ficar aceita");
+
+        // 5) processar pagamento (simula captura)
         boolean paid = rideService.processRidePayment(ride.getId());
         assertTrue(paid, "Pagamento deveria ser processado com sucesso");
 
-        // 5) emitir recibo (deve finalizar a corrida e liberar o motorista)
+        // 6) emitir recibo (deve finalizar a corrida e liberar o motorista)
         rideService.emitReceiptForRide(ride.getId(), "Dinheiro");
 
         // Verifica status finalizado
@@ -113,11 +119,11 @@ public class EndToEndIntegrationTest {
         Driver driverAfter = (Driver) userRepo.findById(assigned.getId());
         assertTrue(driverAfter.isAvailable(), "Motorista deveria ser liberado após emissão do recibo");
 
-        // 6) histórico deve conter um registro
+        // 7) histórico deve conter um registro
         List<model.RideHistory> histories = historyRepo.findByPassengerEmail(p.getEmail());
         assertFalse(histories.isEmpty(), "Histórico do passageiro não deve estar vazio após finalização");
 
-        // 7) avaliar motorista (agora que a corrida está finalizada)
+        // 8) avaliar motorista (agora que a corrida está finalizada)
         ratingService.rateDriver(after, 5);
         Driver driverRated = (Driver) userRepo.findById(assigned.getId());
         assertTrue(driverRated.getAverageRating() >= 5.0, "Motorista deveria ter recebido a avaliação de 5 estrelas");

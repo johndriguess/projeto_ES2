@@ -4,7 +4,6 @@ import repo.RideRepository;
 import repo.UserRepository;
 import repo.RideHistoryRepository;
 import model.Ride;
-import model.User;
 import model.Driver;
 import model.Passenger;
 import model.Location;
@@ -17,15 +16,10 @@ import util.DistanceCalculator;
 import service.PaymentService;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Comparator;
-import java.util.ArrayList;
-
-import service.RouteService;
+import java.util.Collections;
 
 public class RideService {
     private final RideRepository rideRepo;
@@ -66,11 +60,11 @@ public class RideService {
         }
         ride.setVehicleCategory(categoryEnum.name());
 
-        Driver assignedDriver = findAndAssignBestDriver(ride);
+        Driver assignedDriver = findAndAssignBestDriver(ride, Collections.emptyList());
 
         if (assignedDriver != null) {
             ride.setDriverId(assignedDriver.getId());
-            ride.setStatus(Ride.RideStatus.ACEITA);
+            ride.setStatus(Ride.RideStatus.AGUARDANDO_ACEITE_MOTORISTA);
             ride.setDriverCurrentLocation(assignedDriver.getCurrentLocation());
             System.out.println("Motorista encontrado e atribuído: " + assignedDriver.getName());
         } else {
@@ -84,7 +78,7 @@ public class RideService {
         return ride;
     }
 
-    private Driver findAndAssignBestDriver(Ride ride) {
+    private Driver findAndAssignBestDriver(Ride ride, List<String> excludedDriverIds) {
         final VehicleCategory categoryEnum;
         try {
             categoryEnum = VehicleCategory.valueOf(ride.getVehicleCategory());
@@ -100,6 +94,7 @@ public class RideService {
                 .filter(u -> u instanceof Driver)
                 .map(u -> (Driver) u)
                 .filter(Driver::isAvailable)
+                .filter(d -> excludedDriverIds == null || !excludedDriverIds.contains(d.getId()))
                 .filter(d -> d.getVehicle() != null && d.getVehicle().getCategory() != null
                         && (d.getVehicle().getCategory().equals(categoryEnum.name()) ||
                                 d.getVehicle().getCategory().equalsIgnoreCase(categoryEnum.getDisplayName())))
@@ -161,9 +156,8 @@ public class RideService {
         }
 
         return rideRepo.findAll().stream()
-                .filter(ride -> ride.getStatus() == Ride.RideStatus.SOLICITADA)
-                .filter(ride -> ride.getVehicleCategory() != null
-                        && ride.getVehicleCategory().equalsIgnoreCase(driver.getVehicle().getCategory()))
+                .filter(ride -> ride.getStatus() == Ride.RideStatus.AGUARDANDO_ACEITE_MOTORISTA)
+                .filter(ride -> driver.getId().equals(ride.getDriverId()))
                 .collect(Collectors.toList());
     }
 
@@ -174,9 +168,8 @@ public class RideService {
         }
 
         return rideRepo.findAll().stream()
-                .filter(ride -> ride.getStatus() == Ride.RideStatus.SOLICITADA)
-                .filter(ride -> ride.getVehicleCategory() != null
-                        && ride.getVehicleCategory().equalsIgnoreCase(driver.getVehicle().getCategory()))
+                .filter(ride -> ride.getStatus() == Ride.RideStatus.AGUARDANDO_ACEITE_MOTORISTA)
+                .filter(ride -> driver.getId().equals(ride.getDriverId()))
                 .collect(Collectors.toList());
     }
 
@@ -184,18 +177,17 @@ public class RideService {
         Ride ride = getRideById(rideId);
         Driver driver = (Driver) userRepo.findByEmail(driverEmail);
 
-        if (ride.getStatus() != Ride.RideStatus.SOLICITADA) {
+        if (ride.getStatus() != Ride.RideStatus.AGUARDANDO_ACEITE_MOTORISTA) {
             throw new ValidationException("Esta corrida não está mais disponível.");
         }
         if (driver == null) {
             throw new ValidationException("Motorista não encontrado.");
         }
 
-        if (ride.getDriverId() != null) {
-            throw new ValidationException("Corrida já foi atribuída a outro motorista.");
+        if (ride.getDriverId() == null || !ride.getDriverId().equals(driver.getId())) {
+            throw new ValidationException("Esta corrida não está atribuída a você.");
         }
 
-        ride.setDriverId(driver.getId());
         ride.setStatus(Ride.RideStatus.ACEITA);
         ride.setDriverCurrentLocation(driver.getCurrentLocation());
 
@@ -206,8 +198,55 @@ public class RideService {
         System.out.println("Corrida " + rideId + " aceita por " + driver.getName());
     }
 
-    public void refuseRide(String rideId, String driverEmail) {
-        System.out.println("Motorista " + driverEmail + " recusou a corrida " + rideId);
+    public void refuseRide(String rideId, String driverEmail) throws ValidationException {
+        Ride ride = getRideById(rideId);
+        Driver driver = (Driver) userRepo.findByEmail(driverEmail);
+
+        if (driver == null) {
+            throw new ValidationException("Motorista não encontrado.");
+        }
+        if (ride.getStatus() != Ride.RideStatus.AGUARDANDO_ACEITE_MOTORISTA) {
+            throw new ValidationException("Esta corrida não está aguardando aceite do motorista.");
+        }
+        if (ride.getDriverId() == null || !ride.getDriverId().equals(driver.getId())) {
+            throw new ValidationException("Esta corrida não está atribuída a você.");
+        }
+
+        ride.addRefusedDriverId(driver.getId());
+        driver.setAvailable(true);
+        try {
+            userRepo.update(driver);
+        } catch (IOException e) {
+            throw new ValidationException("Não foi possível atualizar o status do motorista.");
+        }
+
+        Driver reassignedDriver = findAndAssignBestDriver(ride, ride.getRefusedDriverIds());
+        if (reassignedDriver != null) {
+            ride.setDriverId(reassignedDriver.getId());
+            ride.setStatus(Ride.RideStatus.AGUARDANDO_ACEITE_MOTORISTA);
+            ride.setDriverCurrentLocation(reassignedDriver.getCurrentLocation());
+            try {
+                routeService.generateRoute(ride);
+                rideRepo.update(ride);
+            } catch (IOException e) {
+                throw new ValidationException("Erro ao atualizar a corrida após recusa.");
+            }
+            System.out.println("Corrida " + rideId + " recusada por " + driver.getName()
+                    + ". Novo motorista atribuído: " + reassignedDriver.getName());
+            return;
+        }
+
+        ride.setDriverId(null);
+        ride.setDriverCurrentLocation(null);
+        ride.setStatus(Ride.RideStatus.CANCELADA);
+        try {
+            routeService.generateRoute(ride);
+            rideRepo.update(ride);
+        } catch (IOException e) {
+            throw new ValidationException("Erro ao cancelar a corrida após recusa.");
+        }
+        System.out.println("Motorista " + driverEmail + " recusou a corrida " + rideId
+                + ". Nenhum outro motorista disponível; corrida cancelada.");
     }
 
     /**

@@ -287,10 +287,13 @@ public class SharedMenus {
             for (int i = 0; i < restaurants.size(); i++) {
                 Restaurant r = restaurants.get(i);
                 double distance = r.getLocation().distanceTo(clientLocation);
+                double avgRating = context.getAvaliacaoService().getAverageRatingForRestaurant(r.getId());
+                int totalRatings = context.getAvaliacaoService().getTotalRatingsForRestaurant(r.getId());
                 System.out.printf("\n%d) %s\n", i + 1, r.getName());
                 System.out.printf("   Email: %s\n", r.getEmail());
                 System.out.printf("   Endereço: %s\n", r.getLocation().getAddress());
                 System.out.printf("   Distância: %.2f km\n", distance);
+                System.out.printf("   Avaliação: %.2f (%d avaliações)\n", avgRating, totalRatings);
                 System.out.printf("   Status: %s | Aberto: %s\n",
                         r.isActive() ? "Ativo" : "Inativo",
                         r.isOpen() ? "Sim" : "Não");
@@ -325,6 +328,11 @@ public class SharedMenus {
             System.out.println("\n--- Detalhes do Restaurante ---");
             System.out.println("Nome: " + details.getRestaurant().getName());
             System.out.println("Endereço: " + details.getRestaurant().getLocation().getAddress());
+            double avgRating = context.getAvaliacaoService()
+                    .getAverageRatingForRestaurant(details.getRestaurant().getId());
+            int totalRatings = context.getAvaliacaoService()
+                    .getTotalRatingsForRestaurant(details.getRestaurant().getId());
+            System.out.printf("Avaliação média: %.2f (%d avaliações)\n", avgRating, totalRatings);
             System.out.printf("Taxa de entrega: R$ %.2f\n", details.getDeliveryFee());
             System.out.printf("Tempo estimado: %d minutos\n", details.getDeliveryTime());
 
@@ -507,5 +515,144 @@ public class SharedMenus {
         } catch (ValidationException e) {
             System.out.println("Erro: " + e.getMessage());
         }
+    }
+
+    public static void customerRateOrder(MenuContext context, String customerEmail) {
+        System.out.println("=== Avaliar Entregador/Restaurante ===");
+        try {
+            List<Order> deliveredOrders = context.getAvaliacaoService().getDeliveredOrdersForCustomer(customerEmail);
+            Order selectedOrder = MenuSelectionHelper.selectOrderFromList(context, deliveredOrders,
+                    "Selecione um pedido entregue para avaliar");
+            if (selectedOrder == null) {
+                return;
+            }
+
+            System.out.println("1 - Avaliar entregador");
+            System.out.println("2 - Avaliar restaurante");
+            System.out.println("0 - Voltar");
+            System.out.print("> ");
+            String choice = context.getScanner().nextLine().trim();
+
+            int note = requestRating(context);
+            if (note == 0) {
+                return;
+            }
+            String comment = requestComment(context);
+
+            if ("1".equals(choice)) {
+                context.getAvaliacaoService().customerRatesDelivery(selectedOrder.getId(), customerEmail, note,
+                        comment);
+                System.out.println("Entregador avaliado com sucesso!");
+            } else if ("2".equals(choice)) {
+                context.getAvaliacaoService().customerRatesRestaurant(selectedOrder.getId(), customerEmail, note,
+                        comment);
+                System.out.println("Restaurante avaliado com sucesso!");
+            } else if (!"0".equals(choice)) {
+                System.out.println("Opção inválida.");
+            }
+        } catch (ValidationException e) {
+            System.out.println("Erro: " + e.getMessage());
+        }
+    }
+
+    public static void deliveryRateOrder(MenuContext context, Delivery delivery) {
+        System.out.println("=== Avaliar Cliente/Restaurante ===");
+        try {
+            List<Order> deliveredOrders = context.getAvaliacaoService().getDeliveredOrdersForDelivery(delivery.getId());
+            Order selectedOrder = MenuSelectionHelper.selectOrderFromList(context, deliveredOrders,
+                    "Selecione uma entrega para avaliar");
+            if (selectedOrder == null) {
+                return;
+            }
+
+            System.out.println("1 - Avaliar cliente");
+            System.out.println("2 - Avaliar restaurante");
+            System.out.println("0 - Voltar");
+            System.out.print("> ");
+            String choice = context.getScanner().nextLine().trim();
+
+            int note = requestRating(context);
+            if (note == 0) {
+                return;
+            }
+            String comment = requestComment(context);
+
+            if ("1".equals(choice)) {
+                context.getAvaliacaoService().deliveryRatesCustomer(selectedOrder.getId(), delivery.getId(), note,
+                        comment);
+                System.out.println("Cliente avaliado com sucesso!");
+            } else if ("2".equals(choice)) {
+                context.getAvaliacaoService().deliveryRatesRestaurant(selectedOrder.getId(), delivery.getId(), note,
+                        comment);
+                System.out.println("Restaurante avaliado com sucesso!");
+            } else if (!"0".equals(choice)) {
+                System.out.println("Opção inválida.");
+            }
+        } catch (ValidationException e) {
+            System.out.println("Erro: " + e.getMessage());
+        }
+    }
+
+    public static void restaurantRateOrder(MenuContext context, Restaurant restaurant) {
+        System.out.println("=== Avaliar Cliente/Entregador ===");
+        try {
+            List<Order> deliveredOrders = context.getAvaliacaoService()
+                    .getDeliveredOrdersForRestaurant(restaurant.getId());
+            Order selectedOrder = MenuSelectionHelper.selectOrderFromList(context, deliveredOrders,
+                    "Selecione um pedido entregue para avaliar");
+            if (selectedOrder == null) {
+                return;
+            }
+
+            System.out.println("1 - Avaliar cliente");
+            System.out.println("2 - Avaliar entregador");
+            System.out.println("0 - Voltar");
+            System.out.print("> ");
+            String choice = context.getScanner().nextLine().trim();
+
+            int note = requestRating(context);
+            if (note == 0) {
+                return;
+            }
+            String comment = requestComment(context);
+
+            if ("1".equals(choice)) {
+                context.getAvaliacaoService().restaurantRatesCustomer(selectedOrder.getId(), restaurant.getId(), note,
+                        comment);
+                System.out.println("Cliente avaliado com sucesso!");
+            } else if ("2".equals(choice)) {
+                context.getAvaliacaoService().restaurantRatesDelivery(selectedOrder.getId(), restaurant.getId(), note,
+                        comment);
+                System.out.println("Entregador avaliado com sucesso!");
+            } else if (!"0".equals(choice)) {
+                System.out.println("Opção inválida.");
+            }
+        } catch (ValidationException e) {
+            System.out.println("Erro: " + e.getMessage());
+        }
+    }
+
+    private static int requestRating(MenuContext context) {
+        while (true) {
+            System.out.print("Nota (1 a 5, ou 0 para cancelar): ");
+            try {
+                int note = Integer.parseInt(context.getScanner().nextLine().trim());
+                if (note == 0) {
+                    System.out.println("Operação cancelada.");
+                    return 0;
+                }
+                if (note >= 1 && note <= 5) {
+                    return note;
+                }
+                System.out.println("Nota inválida.");
+            } catch (NumberFormatException e) {
+                System.out.println("Entrada inválida. Digite um número.");
+            }
+        }
+    }
+
+    private static String requestComment(MenuContext context) {
+        System.out.print("Comentário (opcional): ");
+        return context.getScanner().nextLine().trim();
     }
 }

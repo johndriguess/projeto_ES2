@@ -1,0 +1,28 @@
+=== RECIBO ELETRÔNICO ===
+Recibo ID: receipt-dee3d06c-c5f2-4b3d-a900-6afa0109ce47-5c675b40
+Corrida ID: dee3d06c-c5f2-4b3d-a900-6afa0109ce47
+Gerado em: 2026-03-16T13:47:19.155031Z
+
+--- Passageiro ---
+Nome: Vitor
+Email: vitor@gmail.com
+
+--- Motorista ---
+Nome: Antonio
+Email: antonio@gmail.com
+
+--- Corrida ---
+Origem: Casa
+Destino: UEPB
+Distância estimada: 21.1 km
+Tempo estimado: 49 min
+Categoria: UberX
+Status da corrida: Finalizada
+Rota (resumo): Motorista -> Passageiro (5.1 km) ...
+Tempo estimado total: 66 minutos
+
+--- Pagamento ---
+Forma: Dinheiro
+Valor total: R$ 42.52
+
+Obrigado por utilizar o serviço.

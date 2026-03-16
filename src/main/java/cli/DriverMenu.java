@@ -84,11 +84,11 @@ public class DriverMenu {
             List<Ride> availableRides = context.getRideService().getAvailableRidesForDriver(driver.getEmail());
 
             if (availableRides.isEmpty()) {
-                System.out.println("Nenhuma corrida disponível para sua categoria de veículo.");
+                System.out.println("Nenhuma corrida atribuída aguardando seu aceite.");
                 return;
             }
 
-            System.out.println("\n=== Corridas Disponíveis ===");
+            System.out.println("\n=== Corridas Aguardando Seu Aceite ===");
             System.out.println("Sua categoria: " + driver.getVehicle().getCategory());
             System.out.println("Corridas encontradas: " + availableRides.size());
             System.out.println();
@@ -99,6 +99,7 @@ public class DriverMenu {
                 System.out.printf("   Origem: %s\n", ride.getOrigin().getAddress());
                 System.out.printf("   Destino: %s\n", ride.getDestination().getAddress());
                 System.out.printf("   Categoria: %s\n", ride.getVehicleCategory());
+                System.out.printf("   Status: %s\n", ride.getStatus().getDisplayName());
                 System.out.printf("   Tempo estimado: %d minutos\n", ride.getEstimatedTimeMinutes());
                 System.out.printf("   Passageiro: %s\n", ride.getPassengerEmail());
                 System.out.println("   -------------------------");
@@ -142,6 +143,9 @@ public class DriverMenu {
             String rideId = availableRides.get(option - 1).getId();
             context.getRideService().acceptRide(rideId, driver.getEmail());
             System.out.println("Corrida aceita com sucesso!");
+            double passengerRating = context.getAvaliacaoService().getAverageRatingForCustomer(
+                    availableRides.get(option - 1).getPassengerEmail());
+            System.out.printf("Nota média do passageiro: %.2f\n", passengerRating);
         } catch (NumberFormatException e) {
             System.out.println("Entrada inválida. Digite um número.");
         } catch (ValidationException ve) {
@@ -182,7 +186,7 @@ public class DriverMenu {
 
             String rideId = availableRides.get(option - 1).getId();
             context.getRideService().refuseRide(rideId, driver.getEmail());
-            System.out.println("Corrida recusada com sucesso!");
+            System.out.println("Recusa registrada. O sistema tentou reatribuir a corrida automaticamente.");
         } catch (NumberFormatException e) {
             System.out.println("Entrada inválida. Digite um número.");
         } catch (ValidationException ve) {

@@ -28,9 +28,11 @@ public class Main {
     private static DeliveryRepository deliveryRepo;
     private static RestaurantRepository restaurantRepo;
     private static OrderRepository orderRepo;
+    private static AvaliacaoRepository avaliacaoRepo;
     private static DeliveryService deliveryService;
     private static RestaurantService restaurantService;
     private static OrderService orderService;
+    private static AvaliacaoService avaliacaoService;
     private static NotificationService notificationService;
     private static DeliveryAssignmentService assignmentService;
 
@@ -53,17 +55,19 @@ public class Main {
         deliveryRepo = new DeliveryRepository();
         restaurantRepo = new RestaurantRepository();
         orderRepo = new OrderRepository();
+        avaliacaoRepo = new AvaliacaoRepository();
 
         deliveryService = new DeliveryService(deliveryRepo);
         restaurantService = new RestaurantService(restaurantRepo);
         orderService = new OrderService(orderRepo, restaurantRepo, restaurantService);
+        avaliacaoService = new AvaliacaoService(avaliacaoRepo, orderRepo);
         notificationService = new NotificationService();
         assignmentService = new DeliveryAssignmentService(deliveryRepo, notificationService);
         orderService.setNotificationService(notificationService);
 
         MenuContext context = new MenuContext(userRepo, vehicleRepo, rideRepo, historyRepo,
-                deliveryRepo, restaurantRepo, orderRepo, auth, rideService, pricingService,
-                ratingService, historyService, deliveryService, restaurantService, orderService,
+                deliveryRepo, restaurantRepo, orderRepo, avaliacaoRepo, auth, rideService, pricingService,
+                ratingService, historyService, deliveryService, restaurantService, orderService, avaliacaoService,
                 notificationService, assignmentService, sc);
 
         System.out.println("=== UberPB ===");

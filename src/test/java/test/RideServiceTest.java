@@ -95,7 +95,7 @@ public class RideServiceTest {
 
         assertNotNull(ride.getDriverId());
         assertEquals(driverNear.getId(), ride.getDriverId());
-        assertEquals(Ride.RideStatus.ACEITA, ride.getStatus());
+        assertEquals(Ride.RideStatus.AGUARDANDO_ACEITE_MOTORISTA, ride.getStatus());
         Driver driver = (Driver) userRepo.findById(driverNear.getId());
         assertFalse(driver.isAvailable());
 
@@ -109,6 +109,10 @@ public class RideServiceTest {
         rideService.generateRouteForRide(ride.getId());
         Ride fromRepo = rideRepo.findById(ride.getId());
         assertNotNull(fromRepo.getOptimizedRoute());
+
+        rideService.acceptRide(ride.getId(), driverNear.getEmail());
+        Ride acceptedRide = rideRepo.findById(ride.getId());
+        assertEquals(Ride.RideStatus.ACEITA, acceptedRide.getStatus());
     }
 
     @Test
@@ -119,7 +123,7 @@ public class RideServiceTest {
 
         assertNotNull(ride.getDriverId());
         assertEquals(driverPremiumFar.getId(), ride.getDriverId());
-        assertEquals(Ride.RideStatus.ACEITA, ride.getStatus());
+        assertEquals(Ride.RideStatus.AGUARDANDO_ACEITE_MOTORISTA, ride.getStatus());
         Driver driver = (Driver) userRepo.findById(driverPremiumFar.getId());
         assertFalse(driver.isAvailable());
     }
@@ -178,10 +182,53 @@ public class RideServiceTest {
         Driver driver = (Driver) userRepo.findById(driverId);
         assertFalse(driver.isAvailable());
 
+        rideService.acceptRide(ride.getId(), driver.getEmail());
+
         rideService.emitReceiptForRide(ride.getId(), "PIX");
 
         driver = (Driver) userRepo.findById(driverId);
         assertTrue(driver.isAvailable());
         assertEquals(Ride.RideStatus.FINALIZADA, rideRepo.findById(ride.getId()).getStatus());
+    }
+
+    @Test
+    public void testRefusalReassignsRideToAnotherDriver() throws ValidationException, IOException {
+        String category = "UBER_X";
+        Ride ride = rideService.createRideRequest(passenger.getEmail(), "Rua Perto", "Destino", category,
+                PaymentMethod.PIX);
+
+        assertEquals(driverNear.getId(), ride.getDriverId());
+
+        rideService.refuseRide(ride.getId(), driverNear.getEmail());
+
+        Ride reassignedRide = rideRepo.findById(ride.getId());
+        assertEquals(Ride.RideStatus.AGUARDANDO_ACEITE_MOTORISTA, reassignedRide.getStatus());
+        assertEquals(driverFar.getId(), reassignedRide.getDriverId());
+        assertTrue(reassignedRide.getRefusedDriverIds().contains(driverNear.getId()));
+
+        Driver firstDriver = (Driver) userRepo.findById(driverNear.getId());
+        Driver secondDriver = (Driver) userRepo.findById(driverFar.getId());
+        assertTrue(firstDriver.isAvailable());
+        assertFalse(secondDriver.isAvailable());
+    }
+
+    @Test
+    public void testRefusalCancelsRideWhenNoOtherDriverExists() throws ValidationException, IOException {
+        driverFar.setAvailable(false);
+        userRepo.update(driverFar);
+
+        String category = "UBER_X";
+        Ride ride = rideService.createRideRequest(passenger.getEmail(), "Rua Perto", "Destino", category,
+                PaymentMethod.PIX);
+
+        rideService.refuseRide(ride.getId(), driverNear.getEmail());
+
+        Ride canceledRide = rideRepo.findById(ride.getId());
+        assertEquals(Ride.RideStatus.CANCELADA, canceledRide.getStatus());
+        assertNull(canceledRide.getDriverId());
+        assertTrue(canceledRide.getRefusedDriverIds().contains(driverNear.getId()));
+
+        Driver firstDriver = (Driver) userRepo.findById(driverNear.getId());
+        assertTrue(firstDriver.isAvailable());
     }
 }

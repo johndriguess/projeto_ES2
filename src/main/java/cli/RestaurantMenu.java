@@ -19,6 +19,9 @@ public class RestaurantMenu {
     public void show() {
         while (true) {
             System.out.println("\n=== Menu Restaurante - " + restaurant.getName() + " ===");
+            double avg = context.getAvaliacaoService().getAverageRatingForRestaurant(restaurant.getId());
+            int count = context.getAvaliacaoService().getTotalRatingsForRestaurant(restaurant.getId());
+            System.out.printf("Avaliação média: %.2f (%d avaliações)\n", avg, count);
             System.out.println("Status: " + (restaurant.isActive() ? "Ativo" : "Inativo") +
                     " | Aberto: " + (restaurant.isOpen() ? "Sim" : "Não"));
             System.out.println("1 - Ver Pedidos Pendentes");
@@ -27,6 +30,7 @@ public class RestaurantMenu {
             System.out.println("4 - Gerenciar Cardápio");
             System.out.println("5 - Alternar Status (Ativo/Inativo)");
             System.out.println("6 - Alternar Funcionamento (Aberto/Fechado)");
+            System.out.println("7 - Avaliar Cliente/Entregador");
             System.out.println("0 - Sair");
             System.out.print("> ");
 
@@ -51,6 +55,9 @@ public class RestaurantMenu {
                         break;
                     case "6":
                         toggleOpen();
+                        break;
+                    case "7":
+                        rateOrderParticipants();
                         break;
                     case "0":
                         System.out.println("Saindo...");
@@ -277,5 +284,9 @@ public class RestaurantMenu {
             System.out.println("Restaurante aberto.");
         }
         context.getRestaurantRepo().update(restaurant);
+    }
+
+    private void rateOrderParticipants() {
+        SharedMenus.restaurantRateOrder(context, restaurant);
     }
 }
