@@ -6,10 +6,10 @@ import model.User;
 import model.Vehicle;
 import repo.UserRepository;
 import repo.VehicleRepository;
-import service.DocumentValidator;
 import util.ValidationException;
-import util.Validator; 
+import util.Validator;
 import java.io.IOException;
+import java.util.Objects;
 
 public class AuthService {
     private final UserRepository userRepo;
@@ -21,10 +21,12 @@ public class AuthService {
         this.userRepo = userRepo;
         this.vehicleRepo = vehicleRepo;
         this.documentValidator = new DocumentValidator();
-        this.validator = new Validator(userRepo); 
+        this.validator = new Validator(userRepo);
     }
 
-    public Passenger registerPassenger(String name, String email, String phone, String password) throws ValidationException, IOException {
+    public Passenger registerPassenger(String name, String email, String phone, String password)
+            throws ValidationException, IOException {
+        password = password == null ? null : password.trim();
         validator.validateCommon(name, email, phone);
         validator.validatePassword(password);
         Passenger p = new Passenger(name, email, phone, password);
@@ -33,22 +35,24 @@ public class AuthService {
     }
 
     public Driver registerDriver(String name, String email, String phone, String password,
-                                   String documentNumber, String vehiclePlate,
-                                   String vehicleModel, int vehicleYear, String vehicleColor)
+            String documentNumber, String vehiclePlate,
+            String vehicleModel, int vehicleYear, String vehicleColor)
             throws ValidationException, IOException {
+        password = password == null ? null : password.trim();
         validator.validateCommon(name, email, phone);
         validator.validatePassword(password);
-        if (documentNumber == null || documentNumber.trim().isEmpty()) throw new ValidationException("Documento do motorista obrigatório.");
-        
+        if (documentNumber == null || documentNumber.trim().isEmpty())
+            throw new ValidationException("Documento do motorista obrigatório.");
+
         if (vehicleRepo.existsByPlate(vehiclePlate)) {
             throw new ValidationException("Veículo com esta placa já está cadastrado.");
         }
-        
+
         Vehicle vehicle = new Vehicle(vehiclePlate, vehicleModel, vehicleYear, vehicleColor);
         documentValidator.validateVehicleCategory(vehicle);
-        
+
         Driver d = new Driver(name, email, phone, password, documentNumber, vehicle);
-        
+
         userRepo.add(d);
         vehicleRepo.add(vehicle);
 
@@ -56,7 +60,7 @@ public class AuthService {
     }
 
     public Driver addVehicleToDriver(String driverEmail, String vehiclePlate,
-                                       String vehicleModel, int vehicleYear, String vehicleColor)
+            String vehicleModel, int vehicleYear, String vehicleColor)
             throws ValidationException, IOException {
 
         User user = userRepo.findByEmail(driverEmail);
@@ -64,22 +68,22 @@ public class AuthService {
             throw new ValidationException("Motorista não encontrado.");
         }
         Driver driver = (Driver) user;
-        
+
         if (vehicleRepo.existsByPlate(vehiclePlate)) {
             throw new ValidationException("Veículo com esta placa já está cadastrado.");
         }
-        
+
         Vehicle newVehicle = new Vehicle(vehiclePlate, vehicleModel, vehicleYear, vehicleColor);
         documentValidator.validateVehicleCategory(newVehicle);
-        
+
         driver.addVehicle(newVehicle);
-        
+
         userRepo.update(driver);
         vehicleRepo.add(newVehicle);
-        
+
         return driver;
     }
-    
+
     public User login(String email, String password) throws ValidationException {
         if (email == null || email.trim().isEmpty()) {
             throw new ValidationException("Email não pode ser vazio.");
@@ -87,17 +91,21 @@ public class AuthService {
         if (password == null || password.trim().isEmpty()) {
             throw new ValidationException("Senha não pode ser vazia.");
         }
-        
+
+        password = password.trim();
+
         User user = userRepo.findByEmail(email);
-        
+
         if (user == null) {
             throw new ValidationException("Usuário não encontrado.");
         }
-        
-        if (!user.getPassword().equals(password)) {
+
+        String storedPassword = user.getPassword();
+        if (!Objects.equals(storedPassword, password)
+                && !(storedPassword != null && storedPassword.trim().equals(password))) {
             throw new ValidationException("Senha incorreta.");
         }
-        
+
         return user;
     }
 }

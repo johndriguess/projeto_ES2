@@ -1,37 +1,53 @@
 package repo;
 
-import model.Driver;
 import model.User;
 import java.io.*;
 import java.util.*;
 
 public class UserRepository {
+    private static final String STORAGE_DB_NAME = "users.db";
+    private static final String LEGACY_STORAGE_NAME = "users.date";
+
     private final File storageFile;
-    private Map<String, User> usersByEmail; 
+    private Map<String, User> usersByEmail;
 
     public UserRepository() {
         File dataDir = new File("data");
-        if (!dataDir.exists()) dataDir.mkdirs();
-        this.storageFile = new File(dataDir, "users.date");
+        if (!dataDir.exists())
+            dataDir.mkdirs();
+        this.storageFile = new File(dataDir, STORAGE_DB_NAME);
         load();
     }
 
     public UserRepository(File storageFile) {
         this.storageFile = storageFile;
-        load(); 
+        load();
     }
 
     @SuppressWarnings("unchecked")
     private void load() {
-        if (!storageFile.exists()) {
-            usersByEmail = new HashMap<>();
-            return;
+        File source = storageFile;
+        if (!source.exists()) {
+            File legacy = new File(storageFile.getParentFile(), LEGACY_STORAGE_NAME);
+            if (legacy.exists()) {
+                source = legacy;
+            } else {
+                usersByEmail = new HashMap<>();
+                return;
+            }
         }
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(storageFile))) {
+
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(source))) {
             Object o = ois.readObject();
             usersByEmail = (Map<String, User>) o;
+
+            // Migra automaticamente do arquivo legado users.date para users.db.
+            if (!source.equals(storageFile)) {
+                save();
+            }
         } catch (Exception e) {
-            System.err.println("Não foi possível carregar armazenamento. Inicializando vazio. (" + e.getMessage() + ")");
+            System.err
+                    .println("Não foi possível carregar armazenamento. Inicializando vazio. (" + e.getMessage() + ")");
             usersByEmail = new HashMap<>();
         }
     }
@@ -64,15 +80,15 @@ public class UserRepository {
                 return user;
             }
         }
-        return null; 
+        return null;
     }
-    
+
     public synchronized void update(User user) throws IOException {
         if (user == null || !existsByEmail(user.getEmail())) {
-            return; 
+            return;
         }
         usersByEmail.put(user.getEmail(), user);
-        save(); 
+        save();
     }
 
     public Collection<User> findAll() {

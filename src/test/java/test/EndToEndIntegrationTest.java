@@ -37,7 +37,7 @@ public class EndToEndIntegrationTest {
     private RideService rideService;
     private RatingService ratingService;
 
-    private File userDb = new File("e2e_users.date");
+    private File userDb = new File("e2e_users.db");
     private File vehicleDb = new File("e2e_vehicles.db");
     private File rideDb = new File("e2e_rides.db");
     private File historyDb = new File("e2e_history.db");
@@ -72,21 +72,26 @@ public class EndToEndIntegrationTest {
     @Test
     public void testFullRideFlow() throws ValidationException, IOException {
         // 1) cadastrar passageiro
-        Passenger p = authService.registerPassenger("E2E Passenger", "e2e_pass@example.com", "+5511999000000", "pass123");
+        Passenger p = authService.registerPassenger("E2E Passenger", "e2e_pass@example.com", "+5511999000000",
+                "pass123");
 
         // 2) cadastrar motorista com veículo e categoria UBER_X
-        Driver d = authService.registerDriver("E2E Driver", "e2e_driver@example.com", "+5511999000001", "pass123", "CNH-1", "E2E-PLT", "ModelX", 2020, "Branco");
+        Driver d = authService.registerDriver("E2E Driver", "e2e_driver@example.com", "+5511999000001", "pass123",
+                "CNH-1", "E2E-PLT", "ModelX", 2020, "Branco");
         // garante que o veículo exista e tenha categoria compatível
         d.getVehicle().setCategory(VehicleCategory.UBER_X.name());
         // coloca o motorista próximo do local de origem
         d.setCurrentLocation(new Location("Rua Origem"));
         userRepo.update(d);
 
-        // 3) solicitar corrida; como existe motorista compatível, espera-se atribuição imediata
-    Ride ride = rideService.createRideRequest(p.getEmail(), "Rua Origem", "Rua Destino", VehicleCategory.UBER_X.name(), PaymentMethod.CASH);
+        // 3) solicitar corrida; como existe motorista compatível, espera-se atribuição
+        // imediata
+        Ride ride = rideService.createRideRequest(p.getEmail(), "Rua Origem", "Rua Destino",
+                VehicleCategory.UBER_X.name(), PaymentMethod.CASH);
 
         assertNotNull(ride);
-        assertEquals(Ride.RideStatus.ACEITA, ride.getStatus(), "Esperava-se que a corrida fosse aceita pois há motorista disponível");
+        assertEquals(Ride.RideStatus.ACEITA, ride.getStatus(),
+                "Esperava-se que a corrida fosse aceita pois há motorista disponível");
         assertNotNull(ride.getDriverId(), "Motorista deveria ter sido atribuído");
 
         // Confirma que o motorista foi marcado como indisponível
@@ -98,7 +103,7 @@ public class EndToEndIntegrationTest {
         assertTrue(paid, "Pagamento deveria ser processado com sucesso");
 
         // 5) emitir recibo (deve finalizar a corrida e liberar o motorista)
-    rideService.emitReceiptForRide(ride.getId(), "Dinheiro");
+        rideService.emitReceiptForRide(ride.getId(), "Dinheiro");
 
         // Verifica status finalizado
         Ride after = rideRepo.findById(ride.getId());

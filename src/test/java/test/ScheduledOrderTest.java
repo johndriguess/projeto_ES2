@@ -17,180 +17,180 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ScheduledOrderTest {
 
-    private OrderService orderService;
-    private Restaurant restaurant;
+        private OrderService orderService;
+        private Restaurant restaurant;
 
-    @BeforeEach
-    void setup() {
-        RestaurantRepository restaurantRepository = new RestaurantRepository();
-        RestaurantService restaurantService = new RestaurantService(restaurantRepository);
-        OrderRepository orderRepository = new OrderRepository();
+        @BeforeEach
+        void setup() {
+                RestaurantRepository restaurantRepository = new RestaurantRepository();
+                RestaurantService restaurantService = new RestaurantService(restaurantRepository);
+                OrderRepository orderRepository = new OrderRepository();
 
-        orderService = new OrderService(orderRepository, restaurantRepository, restaurantService);
+                orderService = new OrderService(orderRepository, restaurantRepository, restaurantService);
 
-        restaurant = restaurantService.register(
-                "Pizza Top",
-                "pizza@email.com",
-                "12345678901234",
-                new Location("Rua A", "", 0, 0));
+                restaurant = restaurantService.register(
+                                "Pizza Top",
+                                "pizza@email.com",
+                                "12345678901234",
+                                new Location("Rua A", "", 0, 0));
 
-        restaurant.addMenuItem(new MenuItem("Pizza Calabresa", "Tradicional", 40));
-        restaurant.addMenuItem(new MenuItem("Refrigerante", "Lata", 10));
-    }
+                restaurant.addMenuItem(new MenuItem("Pizza Calabresa", "Tradicional", 40));
+                restaurant.addMenuItem(new MenuItem("Refrigerante", "Lata", 10));
+        }
 
-    @Test
-    void shouldCreateScheduledOrder() {
-        LocalDateTime scheduledTime = LocalDateTime.now().plusHours(2);
+        @Test
+        void shouldCreateScheduledOrder() {
+                LocalDateTime scheduledTime = LocalDateTime.now().plusHours(2);
 
-        Order order = orderService.createScheduledOrder(
-                restaurant.getId(),
-                "cliente@teste.com",
-                restaurant.getMenu(),
-                5,
-                0,
-                scheduledTime);
-        assertEquals(OrderStatus.AGUARDANDO_CONFIRMACAO, order.getStatus());
-        orderService.confirmOrder(order.getId());
-        assertTrue(order.isPreparing());
+                Order order = orderService.createScheduledOrder(
+                                restaurant.getId(),
+                                "cliente@teste.com",
+                                restaurant.getMenu(),
+                                5,
+                                0,
+                                scheduledTime);
+                assertEquals(OrderStatus.AGUARDANDO_CONFIRMACAO, order.getStatus());
+                orderService.confirmOrder(order.getId());
+                assertTrue(order.isPreparing());
 
-        assertNotNull(order);
-        assertNotNull(order.getId());
-        assertEquals(OrderType.AGENDADO, order.getOrderType());
-        assertEquals(scheduledTime, order.getScheduledTime());
-        assertTrue(order.isScheduled());
-        assertFalse(order.isImmediate());
-    }
+                assertNotNull(order);
+                assertNotNull(order.getId());
+                assertEquals(OrderType.AGENDADO, order.getOrderType());
+                assertEquals(scheduledTime, order.getScheduledTime());
+                assertTrue(order.isScheduled());
+                assertFalse(order.isImmediate());
+        }
 
-    @Test
-    void shouldCreateImmediateOrder() {
-        Order order = orderService.createImmediateOrder(
-                restaurant.getId(),
-                "cliente@teste.com",
-                restaurant.getMenu(),
-                5,
-                0);
+        @Test
+        void shouldCreateImmediateOrder() {
+                Order order = orderService.createImmediateOrder(
+                                restaurant.getId(),
+                                "cliente@teste.com",
+                                restaurant.getMenu(),
+                                5,
+                                0);
 
-        assertNotNull(order);
-        assertEquals(OrderType.IMEDIATO, order.getOrderType());
-        assertTrue(order.isImmediate());
-        assertFalse(order.isScheduled());
-        assertNull(order.getScheduledTime());
-    }
+                assertNotNull(order);
+                assertEquals(OrderType.IMEDIATO, order.getOrderType());
+                assertTrue(order.isImmediate());
+                assertFalse(order.isScheduled());
+                assertNull(order.getScheduledTime());
+        }
 
-    @Test
-    void shouldNotAllowScheduledOrderInThePast() {
-        LocalDateTime pastTime = LocalDateTime.now().minusHours(1);
+        @Test
+        void shouldNotAllowScheduledOrderInThePast() {
+                LocalDateTime pastTime = LocalDateTime.now().minusHours(1);
 
-        assertThrows(ValidationException.class, () -> orderService.createScheduledOrder(
-                restaurant.getId(),
-                "cliente@teste.com",
-                restaurant.getMenu(),
-                5,
-                0,
-                pastTime));
-    }
+                assertThrows(ValidationException.class, () -> orderService.createScheduledOrder(
+                                restaurant.getId(),
+                                "cliente@teste.com",
+                                restaurant.getMenu(),
+                                5,
+                                0,
+                                pastTime));
+        }
 
-    @Test
-    void shouldRequireScheduledTimeForScheduledOrders() {
-        assertThrows(ValidationException.class, () -> orderService.createScheduledOrder(
-                restaurant.getId(),
-                "cliente@teste.com",
-                restaurant.getMenu(),
-                5,
-                0,
-                null));
-    }
+        @Test
+        void shouldRequireScheduledTimeForScheduledOrders() {
+                assertThrows(ValidationException.class, () -> orderService.createScheduledOrder(
+                                restaurant.getId(),
+                                "cliente@teste.com",
+                                restaurant.getMenu(),
+                                5,
+                                0,
+                                null));
+        }
 
-    @Test
-    void shouldGetScheduledOrders() {
-        // Criar pedido imediato
-        orderService.createImmediateOrder(
-                restaurant.getId(),
-                "cliente@teste.com",
-                restaurant.getMenu(),
-                5,
-                0);
+        @Test
+        void shouldGetScheduledOrders() {
+                // Criar pedido imediato
+                orderService.createImmediateOrder(
+                                restaurant.getId(),
+                                "cliente@teste.com",
+                                restaurant.getMenu(),
+                                5,
+                                0);
 
-        // Criar pedido agendado
-        orderService.createScheduledOrder(
-                restaurant.getId(),
-                "cliente@teste.com",
-                restaurant.getMenu(),
-                5,
-                0,
-                LocalDateTime.now().plusHours(3));
+                // Criar pedido agendado
+                orderService.createScheduledOrder(
+                                restaurant.getId(),
+                                "cliente@teste.com",
+                                restaurant.getMenu(),
+                                5,
+                                0,
+                                LocalDateTime.now().plusHours(3));
 
-        List<Order> scheduledOrders = orderService.getScheduledOrders();
+                List<Order> scheduledOrders = orderService.getScheduledOrders();
 
-        assertEquals(1, scheduledOrders.size());
-        assertTrue(scheduledOrders.get(0).isScheduled());
-    }
+                assertEquals(1, scheduledOrders.size());
+                assertTrue(scheduledOrders.get(0).isScheduled());
+        }
 
-    @Test
-    void shouldGetImmediateOrders() {
-        // Criar pedido imediato
-        orderService.createImmediateOrder(
-                restaurant.getId(),
-                "cliente@teste.com",
-                restaurant.getMenu(),
-                5,
-                0);
+        @Test
+        void shouldGetImmediateOrders() {
+                // Criar pedido imediato
+                orderService.createImmediateOrder(
+                                restaurant.getId(),
+                                "cliente@teste.com",
+                                restaurant.getMenu(),
+                                5,
+                                0);
 
-        // Criar pedido agendado
-        orderService.createScheduledOrder(
-                restaurant.getId(),
-                "cliente@teste.com",
-                restaurant.getMenu(),
-                5,
-                0,
-                LocalDateTime.now().plusHours(3));
+                // Criar pedido agendado
+                orderService.createScheduledOrder(
+                                restaurant.getId(),
+                                "cliente@teste.com",
+                                restaurant.getMenu(),
+                                5,
+                                0,
+                                LocalDateTime.now().plusHours(3));
 
-        List<Order> immediateOrders = orderService.getImmediateOrders();
+                List<Order> immediateOrders = orderService.getImmediateOrders();
 
-        assertEquals(1, immediateOrders.size());
-        assertTrue(immediateOrders.get(0).isImmediate());
-    }
+                assertEquals(1, immediateOrders.size());
+                assertTrue(immediateOrders.get(0).isImmediate());
+        }
 
-    @Test
-    void shouldScheduleOrderForSpecificTime() {
-        LocalDateTime tomorrow2PM = LocalDateTime.now()
-                .plusDays(1)
-                .withHour(14)
-                .withMinute(0)
-                .withSecond(0);
+        @Test
+        void shouldScheduleOrderForSpecificTime() {
+                LocalDateTime tomorrow2PM = LocalDateTime.now()
+                                .plusDays(1)
+                                .withHour(14)
+                                .withMinute(0)
+                                .withSecond(0);
 
-        Order order = orderService.createScheduledOrder(
-                restaurant.getId(),
-                "cliente@outro.com",
-                List.of(new MenuItem("Pizza", "Margherita", 35)),
-                8,
-                5,
-                tomorrow2PM);
-        assertEquals(OrderStatus.AGUARDANDO_CONFIRMACAO, order.getStatus());
+                Order order = orderService.createScheduledOrder(
+                                restaurant.getId(),
+                                "cliente@outro.com",
+                                List.of(new MenuItem("Pizza", "Margherita", 35)),
+                                8,
+                                5,
+                                tomorrow2PM);
+                assertEquals(OrderStatus.AGUARDANDO_CONFIRMACAO, order.getStatus());
 
-        assertNotNull(order.getScheduledTime());
-        assertEquals(14, order.getScheduledTime().getHour());
-        assertEquals(OrderType.AGENDADO, order.getOrderType());
-    }
+                assertNotNull(order.getScheduledTime());
+                assertEquals(14, order.getScheduledTime().getHour());
+                assertEquals(OrderType.AGENDADO, order.getOrderType());
+        }
 
-    @Test
-    void shouldCalculatePriceCorrectlyForScheduledOrders() {
-        Order order = orderService.createScheduledOrder(
-                restaurant.getId(),
-                "cliente@ok.com",
-                restaurant.getMenu(),
-                5,
-                10,
-                LocalDateTime.now().plusHours(5));
+        @Test
+        void shouldCalculatePriceCorrectlyForScheduledOrders() {
+                Order order = orderService.createScheduledOrder(
+                                restaurant.getId(),
+                                "cliente@ok.com",
+                                restaurant.getMenu(),
+                                5,
+                                10,
+                                LocalDateTime.now().plusHours(5));
 
-        double expectedSubtotal = 50; // 40 + 10
-        double expectedDeliveryFee = 5;
-        double expectedDiscount = 10;
-        double expectedTotal = 45; // 50 + 5 - 10
+                double expectedSubtotal = 50; // 40 + 10
+                double expectedDeliveryFee = 5;
+                double expectedDiscount = 10;
+                double expectedTotal = 45; // 50 + 5 - 10
 
-        assertEquals(expectedSubtotal, order.getSubtotal());
-        assertEquals(expectedDeliveryFee, order.getDeliveryFee());
-        assertEquals(expectedDiscount, order.getDiscount());
-        assertEquals(expectedTotal, order.getTotal());
-    }
+                assertEquals(expectedSubtotal, order.getSubtotal());
+                assertEquals(expectedDeliveryFee, order.getDeliveryFee());
+                assertEquals(expectedDiscount, order.getDiscount());
+                assertEquals(expectedTotal, order.getTotal());
+        }
 }

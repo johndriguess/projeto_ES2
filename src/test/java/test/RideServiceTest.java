@@ -51,26 +51,30 @@ public class RideServiceTest {
 
         passenger = authService.registerPassenger("Passageiro", "p@p.com", "111", "password123");
 
-        driverNear = authService.registerDriver("Driver Perto", "near@d.com", "222", "password123", "cnh1", "PLT-001", "Kwid", 2019, "Branco"); 
-        driverNear.setCurrentLocation(new Location("Rua Perto")); 
+        driverNear = authService.registerDriver("Driver Perto", "near@d.com", "222", "password123", "cnh1", "PLT-001",
+                "Kwid", 2019, "Branco");
+        driverNear.setCurrentLocation(new Location("Rua Perto"));
         driverNear.addRating(3);
         driverNear.getVehicle().setCategory("UBER_X");
         userRepo.update(driverNear);
 
-        driverFar = authService.registerDriver("Driver Longe", "far@d.com", "333", "password123", "cnh2", "PLT-002", "Mobi", 2020, "Azul");
-        driverFar.setCurrentLocation(new Location("Avenida Distante")); 
+        driverFar = authService.registerDriver("Driver Longe", "far@d.com", "333", "password123", "cnh2", "PLT-002",
+                "Mobi", 2020, "Azul");
+        driverFar.setCurrentLocation(new Location("Avenida Distante"));
         driverFar.addRating(5);
         driverFar.getVehicle().setCategory("UBER_X");
         userRepo.update(driverFar);
 
-        driverPremiumNear = authService.registerDriver("Driver Premium Perto", "premnear@d.com", "444", "password123", "cnh3", "PLT-003", "Civic", 2022, "Preto"); 
-        driverPremiumNear.setCurrentLocation(new Location("Rua Perto")); 
+        driverPremiumNear = authService.registerDriver("Driver Premium Perto", "premnear@d.com", "444", "password123",
+                "cnh3", "PLT-003", "Civic", 2022, "Preto");
+        driverPremiumNear.setCurrentLocation(new Location("Rua Perto"));
         driverPremiumNear.addRating(3);
         driverPremiumNear.getVehicle().setCategory("UBER_COMFORT");
         userRepo.update(driverPremiumNear);
-        
-        driverPremiumFar = authService.registerDriver("Driver Premium Longe", "premfar@d.com", "555", "password123", "cnh4", "PLT-004", "Corolla", 2023, "Prata"); 
-        driverPremiumFar.setCurrentLocation(new Location("Avenida Distante")); 
+
+        driverPremiumFar = authService.registerDriver("Driver Premium Longe", "premfar@d.com", "555", "password123",
+                "cnh4", "PLT-004", "Corolla", 2023, "Prata");
+        driverPremiumFar.setCurrentLocation(new Location("Avenida Distante"));
         driverPremiumFar.addRating(5);
         driverPremiumFar.getVehicle().setCategory("UBER_COMFORT");
         userRepo.update(driverPremiumFar);
@@ -85,8 +89,9 @@ public class RideServiceTest {
 
     @Test
     public void testAssignsClosestDriverForNonPremium() throws ValidationException, IOException {
-    String category = "UBER_X";
-        Ride ride = rideService.createRideRequest(passenger.getEmail(), "Rua Perto", "Destino", category, PaymentMethod.PIX);
+        String category = "UBER_X";
+        Ride ride = rideService.createRideRequest(passenger.getEmail(), "Rua Perto", "Destino", category,
+                PaymentMethod.PIX);
 
         assertNotNull(ride.getDriverId());
         assertEquals(driverNear.getId(), ride.getDriverId());
@@ -94,7 +99,8 @@ public class RideServiceTest {
         Driver driver = (Driver) userRepo.findById(driverNear.getId());
         assertFalse(driver.isAvailable());
 
-        // route information should be generated when the ride is created and/or accepted
+        // route information should be generated when the ride is created and/or
+        // accepted
         assertNotNull(ride.getOptimizedRoute());
         assertFalse(ride.getOptimizedRoute().isEmpty());
         assertTrue(ride.getEstimatedTimeMinutes() > 0);
@@ -107,9 +113,10 @@ public class RideServiceTest {
 
     @Test
     public void testAssignsHighestRatedDriverForPremium() throws ValidationException, IOException {
-    String category = "UBER_COMFORT";
-        Ride ride = rideService.createRideRequest(passenger.getEmail(), "Rua Perto", "Destino", category, PaymentMethod.PIX);
-        
+        String category = "UBER_COMFORT";
+        Ride ride = rideService.createRideRequest(passenger.getEmail(), "Rua Perto", "Destino", category,
+                PaymentMethod.PIX);
+
         assertNotNull(ride.getDriverId());
         assertEquals(driverPremiumFar.getId(), ride.getDriverId());
         assertEquals(Ride.RideStatus.ACEITA, ride.getStatus());
@@ -122,8 +129,8 @@ public class RideServiceTest {
         // Ajusta o rating dos dois motoristas premium para o mesmo valor
         driverPremiumNear.getVehicle().setCategory("UBER_COMFORT");
         driverPremiumFar.getVehicle().setCategory("UBER_COMFORT");
-            driverPremiumNear.setCurrentLocation(new Location("A"));
-            driverPremiumFar.setCurrentLocation(new Location("Z"));
+        driverPremiumNear.setCurrentLocation(new Location("A"));
+        driverPremiumFar.setCurrentLocation(new Location("Z"));
 
         while (driverPremiumNear.getAverageRating() < 5.0) {
             driverPremiumNear.addRating(5);
@@ -136,8 +143,9 @@ public class RideServiceTest {
         userRepo.update(driverPremiumFar);
 
         String category = "UBER_COMFORT";
-        Ride ride = rideService.createRideRequest(passenger.getEmail(), "Rua Perto", "Destino", category, PaymentMethod.PIX);
-        
+        Ride ride = rideService.createRideRequest(passenger.getEmail(), "Rua Perto", "Destino", category,
+                PaymentMethod.PIX);
+
         assertNotNull(ride.getDriverId());
         assertEquals(driverPremiumNear.getId(), ride.getDriverId());
     }
@@ -150,7 +158,8 @@ public class RideServiceTest {
         userRepo.update(driverFar);
 
         String category = "UBER_X";
-        Ride ride = rideService.createRideRequest(passenger.getEmail(), "Rua Perto", "Destino", category, PaymentMethod.PIX);
+        Ride ride = rideService.createRideRequest(passenger.getEmail(), "Rua Perto", "Destino", category,
+                PaymentMethod.PIX);
 
         assertNull(ride.getDriverId());
         assertEquals(Ride.RideStatus.SOLICITADA, ride.getStatus());
@@ -162,14 +171,15 @@ public class RideServiceTest {
 
     @Test
     public void testDriverIsReleasedAfterReceipt() throws ValidationException, IOException {
-    String category = "UBER_X";
-        Ride ride = rideService.createRideRequest(passenger.getEmail(), "Rua Perto", "Destino", category, PaymentMethod.PIX);
+        String category = "UBER_X";
+        Ride ride = rideService.createRideRequest(passenger.getEmail(), "Rua Perto", "Destino", category,
+                PaymentMethod.PIX);
         String driverId = ride.getDriverId();
         Driver driver = (Driver) userRepo.findById(driverId);
         assertFalse(driver.isAvailable());
-        
+
         rideService.emitReceiptForRide(ride.getId(), "PIX");
-        
+
         driver = (Driver) userRepo.findById(driverId);
         assertTrue(driver.isAvailable());
         assertEquals(Ride.RideStatus.FINALIZADA, rideRepo.findById(ride.getId()).getStatus());

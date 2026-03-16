@@ -15,11 +15,11 @@ public class DeliveryService {
     }
 
     public Delivery register(String name,
-                             String email,
-                             String document,
-                             String phone,
-                             String cnh,
-                             String vehicleDocument) {
+            String email,
+            String document,
+            String phone,
+            String cnh,
+            String vehicleDocument) {
 
         validate(name, email, document, phone, cnh, vehicleDocument);
 
@@ -37,8 +37,7 @@ public class DeliveryService {
                 document,
                 phone,
                 cnh,
-                vehicleDocument
-        );
+                vehicleDocument);
 
         // 🔹 valida documentos RF02
         documentValidator.validateDeliveryDocuments(delivery);
@@ -48,11 +47,11 @@ public class DeliveryService {
     }
 
     private void validate(String name,
-                          String email,
-                          String document,
-                          String phone,
-                          String cnh,
-                          String vehicleDocument) {
+            String email,
+            String document,
+            String phone,
+            String cnh,
+            String vehicleDocument) {
 
         if (name == null || name.isBlank()) {
             throw new ValidationException("Nome é obrigatório.");
@@ -75,7 +74,7 @@ public class DeliveryService {
         }
 
         if (vehicleDocument == null || vehicleDocument.isBlank()) {
-            throw new ValidationException("Documento do veículo é obrigatório.");
+            throw new ValidationException("Placa do veículo é obrigatório.");
         }
     }
 }

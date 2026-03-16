@@ -56,6 +56,14 @@ public class Restaurant implements Serializable {
         this.active = false;
     }
 
+    public void activate() {
+        this.active = true;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
     public boolean isOpen() {
         return open;
     }
