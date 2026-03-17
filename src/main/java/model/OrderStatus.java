@@ -5,6 +5,9 @@ public enum OrderStatus {
     CONFIRMADO,
     PREPARACAO,
     PRONTO,
+    DISPONIVEL,
+    ACEITO,
+    RECUSADO,
     EM_ENTREGA,
     ENTREGUE,
     REJEITADO

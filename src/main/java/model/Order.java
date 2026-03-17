@@ -2,6 +2,7 @@ package model;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,7 +28,9 @@ public class Order implements Serializable {
     // RF23 - Pedidos agendados
     private OrderType orderType;
     private LocalDateTime scheduledTime;
+    private List<String> refusedDeliveryIds = new ArrayList<>();
 
+    
     public Order(String restaurantId, String customerEmail, List<MenuItem> items) {
         this.id = UUID.randomUUID().toString();
         this.restaurantId = restaurantId;
@@ -45,6 +48,16 @@ public class Order implements Serializable {
         this.status = OrderStatus.AGUARDANDO_CONFIRMACAO;
         this.orderType = orderType;
         this.scheduledTime = scheduledTime;
+    }
+
+    public List<String> getRefusedDeliveryIds() {
+        return refusedDeliveryIds;
+    }
+
+    public void addRefusedDeliveryId(String deliveryId) {
+        if (!this.refusedDeliveryIds.contains(deliveryId)) {
+            this.refusedDeliveryIds.add(deliveryId);
+        }
     }
 
     public String getId() {
@@ -173,5 +186,15 @@ public class Order implements Serializable {
 
     public boolean isImmediate() {
         return orderType == OrderType.IMEDIATO;
+    }
+
+    public String getOrigin() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getOrigin'");
+    }
+
+    public Object getDestination() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getDestination'");
     }
 }

@@ -1,5 +1,7 @@
 package cli;
 
+import java.util.List;
+
 import model.*;
 import util.ValidationException;
 
@@ -29,7 +31,9 @@ public class DeliveryMenu {
             System.out.println("2 - Ver Notificações");
             System.out.println("3 - Alternar Disponibilidade");
             System.out.println("4 - Ver Minhas Entregas");
-            System.out.println("5 - Avaliar Cliente/Restaurante");
+            System.out.println("5 - Ver Pedidos Disponíveis (Aceitar/Recusar)");
+            System.out.println("6 - Atualizar Status da Entrega (Sair p/ Entrega / Entregue)");
+            System.out.println("7 - Avaliar Cliente/Restaurante");
             System.out.println("0 - Sair");
             System.out.print("> ");
 
@@ -63,6 +67,89 @@ public class DeliveryMenu {
             } catch (Exception e) {
                 System.out.println("Erro inesperado: " + e.getMessage());
             }
+        }
+        
+
+    }
+
+    private void manageAvailableOrders() {
+        if (!delivery.isActive()) {
+            System.out.println("Você está inativo. Alterne sua disponibilidade primeiro.");
+            return;
+        }
+        if (delivery.getCurrentLocation() == null) {
+            System.out.println("Por favor, atualize sua localização primeiro.");
+            return;
+        }
+
+        System.out.println("=== Pedidos Disponíveis na Região ===");
+        // Define o raio como 10km da localização do entregador
+        List<Order> available = context.getOrderService().getAvailableOrdersForDelivery(
+            delivery.getId(), delivery.getCurrentLocation().getAddress(), 10.0); 
+
+        if (available.isEmpty()) {
+            System.out.println("Nenhum pedido disponível no momento.");
+            return;
+        }
+
+        for (int i = 0; i < available.size(); i++) {
+            Order o = available.get(i);
+            System.out.printf("%d) Pedido ID: %s | Ganho Est.: R$ %.2f\n", i + 1, o.getId(), o.getDeliveryFee());
+            System.out.printf("   Origem: %s\n", o.getOrigin());
+            System.out.printf("   Destino: %s\n", o.getDestination());
+        }
+
+        System.out.print("\nEscolha um pedido (número) ou 0 para voltar: ");
+        int choice = Integer.parseInt(context.getScanner().nextLine().trim());
+        if (choice < 1 || choice > available.size()) return;
+
+        Order selected = available.get(choice - 1);
+        System.out.print("Deseja (A)ceitar ou (R)ecusar o pedido? ");
+        String action = context.getScanner().nextLine().trim().toUpperCase();
+
+        if (action.equals("A")) {
+            context.getOrderService().acceptOrderByDelivery(selected.getId(), delivery.getId());
+            System.out.println("Pedido ACEITO com sucesso! Dirija-se ao restaurante.");
+        } else if (action.equals("R")) {
+            context.getOrderService().refuseOrderByDelivery(selected.getId(), delivery.getId());
+            System.out.println("Pedido RECUSADO.");
+        }
+    }
+
+    private void updateDeliveryStatus() {
+        System.out.println("=== Atualizar Status da Entrega ===");
+        List<Order> myOrders = context.getOrderRepo().findAll().stream()
+            .filter(o -> delivery.getId().equals(o.getAssignedDeliveryId()))
+            .filter(o -> o.getStatus() == OrderStatus.ACEITO || o.getStatus() == OrderStatus.EM_ENTREGA)
+            .collect(java.util.stream.Collectors.toList());
+
+        if (myOrders.isEmpty()) {
+            System.out.println("Nenhuma entrega em andamento (com status ACEITO ou EM_ENTREGA).");
+            return;
+        }
+
+        for (int i = 0; i < myOrders.size(); i++) {
+            Order o = myOrders.get(i);
+            System.out.printf("%d) Pedido ID: %s | Status Atual: %s\n", i + 1, o.getId(), o.getStatus());
+        }
+        
+        System.out.print("\nEscolha um pedido (número) ou 0 para voltar: ");
+        int choice = Integer.parseInt(context.getScanner().nextLine().trim());
+        if (choice < 1 || choice > myOrders.size()) return;
+
+        Order selected = myOrders.get(choice - 1);
+
+        System.out.println("1 - Marcar como Saiu para Entrega (EM_ENTREGA)");
+        System.out.println("2 - Marcar como Concluído (ENTREGUE)");
+        System.out.print("> ");
+        String action = context.getScanner().nextLine().trim();
+
+        if (action.equals("1")) {
+            context.getOrderService().dispatchOrder(selected.getId());
+            System.out.println("Status atualizado para EM_ENTREGA.");
+        } else if (action.equals("2")) {
+            context.getOrderService().deliverOrder(selected.getId());
+            System.out.println("Entrega concluída! Bom trabalho.");
         }
     }
 

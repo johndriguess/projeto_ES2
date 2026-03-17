@@ -28,28 +28,16 @@ final class OrderFlowHelper {
         try {
             context.getOrderService().confirmOrder(order.getId());
             System.out.println("\nPedido confirmado com sucesso!");
+            System.out.println("O restaurante já foi notificado e iniciará o preparo em breve.");
             System.out.println("Tempo estimado de entrega: " +
                     context.getRestaurantService().calculateEstimatedTime(distance) + " minutos");
+            
+            // RF24: A atribuição não é mais forçada aqui.
+            // O restaurante que fará o status ir de PRONTO -> DISPONIVEL 
+            // Para que os Entregadores da região vejam e possam Aceitar/Recusar manualmente.
 
-            System.out.println("\nBuscando entregador disponível...");
-            context.getAssignmentService().assignDeliveryToOrder(
-                    order,
-                    restaurant.getLocation(),
-                    restaurant.getName(),
-                    "Endereço do cliente");
-
-            context.getOrderRepo().update(order);
-
-            Delivery delivery = context.getDeliveryRepo().findById(order.getAssignedDeliveryId())
-                    .orElse(null);
-            if (delivery != null) {
-                System.out.println("\nEntregador atribuído:");
-                System.out.println("   Nome: " + delivery.getName());
-                System.out.println("   Telefone: " + delivery.getPhone());
-            }
         } catch (ValidationException e) {
             System.out.println("Aviso: " + e.getMessage());
-            System.out.println("Pedido confirmado, mas será necessário atribuir entregador manualmente.");
         }
     }
 }

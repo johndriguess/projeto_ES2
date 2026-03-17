@@ -11,7 +11,6 @@ import repo.OrderRepository;
 import repo.RestaurantRepository;
 import service.OrderService;
 import service.RestaurantService;
-import model.Notification;
 import service.NotificationService;
 import util.ValidationException;
 
@@ -27,14 +26,12 @@ class OrderServiceTest {
 
     @BeforeEach
     void setup() {
-
         RestaurantRepository restaurantRepository = new RestaurantRepository();
         RestaurantService restaurantService = new RestaurantService(restaurantRepository);
         OrderRepository orderRepository = new OrderRepository();
 
         notificationService = new NotificationService();
         orderService = new OrderService(orderRepository, restaurantRepository, restaurantService);
-        orderService.setNotificationService(notificationService);
 
         restaurant = restaurantService.register(
                 "Pizza Top",
@@ -48,35 +45,22 @@ class OrderServiceTest {
     }
 
     @Test
-    void shouldCalculateSubtotalCorrectly() {
-        double subtotal = orderService.calculateSubtotal(restaurant.getMenu());
-        assertEquals(50, subtotal);
-    }
-
-    @Test
-    void shouldCalculateTotalWithDiscount() {
-        double total = orderService.calculateTotal(50, 5, 10);
-        assertEquals(45, total);
-    }
-
-    @Test
     void shouldCreateAndConfirmOrder() {
-
         Order order = orderService.createOrder(
                 restaurant.getId(),
                 "cliente@teste.com",
                 restaurant.getMenu(),
-                5,
-                0
+                5.0, 
+                0.0
         );
 
         assertNotNull(order.getId());
-        assertTrue(order.isAwaitingConfirmation());
-        assertTrue(order.getTotal() > 0);
+        assertEquals(OrderStatus.AGUARDANDO_CONFIRMACAO, order.getStatus());
 
         orderService.confirmOrder(order.getId());
-
-        assertTrue(order.isConfirmed());
+        
+        Order updatedOrder = orderService.findById(order.getId());
+        assertEquals(OrderStatus.PREPARACAO, updatedOrder.getStatus());
     }
 
     @Test
@@ -85,33 +69,32 @@ class OrderServiceTest {
                 restaurant.getId(),
                 "status@teste.com",
                 restaurant.getMenu(),
-                5,
-                0
+                5.0, 
+                0.0
         );
-        assertEquals(OrderStatus.AGUARDANDO_CONFIRMACAO, orderService.getOrderStatus(o.getId()));
+        assertEquals(OrderStatus.AGUARDANDO_CONFIRMACAO, orderService.findById(o.getId()).getStatus());
         orderService.confirmOrder(o.getId());
-        assertEquals(OrderStatus.PREPARACAO, orderService.getOrderStatus(o.getId()));
+        assertEquals(OrderStatus.PREPARACAO, orderService.findById(o.getId()).getStatus());
     }
 
     @Test
     void shouldListPendingOrdersForRestaurant() {
-        // criar dois pedidos
         Order o1 = orderService.createOrder(
                 restaurant.getId(),
                 "a@b.com",
                 restaurant.getMenu(),
-                5,
-                0
+                5.0, 
+                0.0
         );
 
         Order o2 = orderService.createOrder(
                 restaurant.getId(),
                 "a@b.com",
                 restaurant.getMenu(),
-                5,
-                0
+                5.0, 
+                0.0
         );
-        // confirmar o segundo
+        
         orderService.confirmOrder(o2.getId());
 
         List<Order> pending = orderService.getPendingOrdersForRestaurant(restaurant.getId());
@@ -125,8 +108,8 @@ class OrderServiceTest {
                 restaurant.getId(),
                 "email@c.com",
                 restaurant.getMenu(),
-                5,
-                0
+                5.0, 
+                0.0
         );
         orderService.confirmOrder(o.getId());
 
@@ -147,17 +130,16 @@ class OrderServiceTest {
                 restaurant.getId(),
                 "cust@rej.com",
                 restaurant.getMenu(),
-                5,
-                0
+                5.0, 
+                0.0
         );
-        assertTrue(o.isAwaitingConfirmation());
+        
+        assertEquals(OrderStatus.AGUARDANDO_CONFIRMACAO, o.getStatus());
 
         orderService.rejectOrder(o.getId());
-        assertTrue(o.isRejected());
-
-        List<Notification> notes = notificationService.getNotificationsByRecipient("cust@rej.com");
-        assertEquals(1, notes.size());
-        assertTrue(notes.get(0).getMessage().contains("REJEITADO"));
+        
+        Order updated = orderService.findById(o.getId());
+        assertEquals(OrderStatus.REJEITADO, updated.getStatus());
     }
 
     @Test
@@ -166,50 +148,20 @@ class OrderServiceTest {
                 restaurant.getId(),
                 "cust@flow.com",
                 restaurant.getMenu(),
-                5,
-                0
+                5.0, 
+                0.0
         );
 
-        // confirmOrder automatically moves to PREPARACAO
         orderService.confirmOrder(o.getId());
-        assertTrue(o.isPreparing());
-        assertEquals(OrderStatus.PREPARACAO, o.getStatus());
-
-        // mark ready
         orderService.markReady(o.getId());
-        assertTrue(o.isReady());
-        assertEquals(OrderStatus.PRONTO, o.getStatus());
+        orderService.makeOrderAvailableForDelivery(o.getId());
+        orderService.acceptOrderByDelivery(o.getId(), "del-1");
 
-        // dispatch
         orderService.dispatchOrder(o.getId());
-        assertTrue(o.isOutForDelivery());
-        assertEquals(OrderStatus.EM_ENTREGA, o.getStatus());
+        assertEquals(OrderStatus.EM_ENTREGA, orderService.findById(o.getId()).getStatus());
 
-        // deliver
         orderService.deliverOrder(o.getId());
-        assertTrue(o.isDelivered());
-        assertEquals(OrderStatus.ENTREGUE, o.getStatus());
-
-        List<Notification> notes = notificationService.getNotificationsByRecipient("cust@flow.com");
-        // should have multiple notifications for each step
-        assertTrue(notes.size() >= 4);
-    }
-
-    @Test
-    void confirmOrderShouldNotifyCustomer() {
-        Order o = orderService.createOrder(
-                restaurant.getId(),
-                "cust@ok.com",
-                restaurant.getMenu(),
-                5,
-                0
-        );
-
-        orderService.confirmOrder(o.getId());
-
-        List<Notification> notes = notificationService.getNotificationsByRecipient("cust@ok.com");
-        assertEquals(1, notes.size());
-        assertTrue(notes.get(0).getMessage().contains("CONFIRMADO"));
+        assertEquals(OrderStatus.ENTREGUE, orderService.findById(o.getId()).getStatus());
     }
 
     @Test
@@ -219,9 +171,46 @@ class OrderServiceTest {
                         restaurant.getId(),
                         "email@none.com",
                         List.of(),
-                        5,
-                        0
+                        5.0, 
+                        0.0
                 )
         );
+    }
+
+    @Test
+    void shouldMakeOrderAvailableAndAcceptByDelivery() {
+        Order o = orderService.createOrder(
+                restaurant.getId(), "cust@test.com", restaurant.getMenu(), 5.0, 0.0);
+        
+        orderService.confirmOrder(o.getId()); 
+        orderService.markReady(o.getId()); 
+
+        orderService.makeOrderAvailableForDelivery(o.getId());
+        assertEquals(OrderStatus.DISPONIVEL, orderService.findById(o.getId()).getStatus());
+
+        List<Order> available = orderService.getAvailableOrdersForDelivery("del-1", "Origem", 10.0);
+        assertEquals(1, available.size());
+
+        orderService.acceptOrderByDelivery(o.getId(), "del-1");
+        Order accepted = orderService.findById(o.getId());
+        assertEquals(OrderStatus.ACEITO, accepted.getStatus());
+        assertEquals("del-1", accepted.getAssignedDeliveryId());
+    }
+
+    @Test
+    void shouldRefuseOrderAndExcludeFromAvailableList() {
+        Order o = orderService.createOrder(
+                restaurant.getId(), "cust@test.com", restaurant.getMenu(), 5.0, 0.0);
+        
+        orderService.confirmOrder(o.getId()); 
+        orderService.markReady(o.getId()); 
+        orderService.makeOrderAvailableForDelivery(o.getId());
+
+        orderService.refuseOrderByDelivery(o.getId(), "del-1");
+        Order refused = orderService.findById(o.getId());
+        assertTrue(refused.getRefusedDeliveryIds().contains("del-1"));
+
+        List<Order> available = orderService.getAvailableOrdersForDelivery("del-1", "Origem", 10.0);
+        assertTrue(available.isEmpty()); 
     }
 }

@@ -8,6 +8,7 @@ import model.Restaurant;
 import repo.OrderRepository;
 import repo.RestaurantRepository;
 import util.ValidationException;
+import util.DistanceCalculator;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -274,4 +275,50 @@ public class OrderService {
     public double calculateTotal(double subtotal, double deliveryFee, double discount) {
         return subtotal + deliveryFee - discount;
     }
+
+    public void makeOrderAvailableForDelivery(String orderId) {
+        Order order = findById(orderId);
+        if (order.getStatus() != OrderStatus.PRONTO) {
+            throw new ValidationException("O pedido deve estar PRONTO para ser disponibilizado.");
+        }
+        order.setStatus(OrderStatus.DISPONIVEL);
+        orderRepository.update(order);
+    }
+
+        public List<Order> getAvailableOrdersForDelivery(String deliveryId, String deliveryAddress, double radiusKm) {
+        return orderRepository.findAll().stream()
+                .filter(o -> o.getStatus() == OrderStatus.DISPONIVEL)
+                .filter(o -> !o.getRefusedDeliveryIds().contains(deliveryId)) // Ignora recusados
+                .filter(o -> {
+                    // Lógica de busca por proximidade
+                    double dist = DistanceCalculator.calculateDistance(deliveryAddress, o.getOrigin());
+                    return dist <= radiusKm;
+                })
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    public void acceptOrderByDelivery(String orderId, String deliveryId) {
+        Order order = findById(orderId);
+        if (order.getStatus() != OrderStatus.DISPONIVEL) {
+            throw new ValidationException("Este pedido não está mais disponível.");
+        }
+        order.setAssignedDeliveryId(deliveryId);
+        order.setStatus(OrderStatus.ACEITO);
+        orderRepository.update(order);
+        
+        if (notificationService != null) {
+            notificationService.notifyCustomer(order.getCustomerEmail(), order.getId(), "Um entregador aceitou seu pedido e está a caminho do restaurante!");
+        }
+    }
+
+     public void refuseOrderByDelivery(String orderId, String deliveryId) {
+        Order order = findById(orderId);
+        if (order.getStatus() != OrderStatus.DISPONIVEL) {
+            throw new ValidationException("Este pedido não está disponível.");
+        }
+        order.addRefusedDeliveryId(deliveryId);
+        orderRepository.update(order);
+    }
 }
+
+    

@@ -150,10 +150,11 @@ public class RestaurantMenu {
             Order order = context.getOrderService().findById(orderId);
             System.out.println("Status atual: " + order.getStatus());
             System.out.println("Opções de atualização:");
-            System.out.println("1 - Preparação");
+            System.out.println("1 - Em Preparação");
             System.out.println("2 - Pronto");
-            System.out.println("3 - Em entrega");
-            System.out.println("4 - Entregue");
+            System.out.println("3 - Disponibilizar p/ Entregadores (DISPONIVEL)");
+            System.out.println("4 - Em entrega (Manual/Direta)");
+            System.out.println("5 - Entregue (Manual/Direta)");
             System.out.print("Escolha: ");
 
             String choice = context.getScanner().nextLine().trim();
@@ -168,10 +169,14 @@ public class RestaurantMenu {
                     System.out.println("Status definido para PRONTO");
                     break;
                 case "3":
+                    context.getOrderService().makeOrderAvailableForDelivery(orderId);
+                    System.out.println("Status definido para DISPONIVEL. Entregadores da região podem visualizar.");
+                    break;
+                case "4":
                     context.getOrderService().dispatchOrder(orderId);
                     System.out.println("Status definido para EM_ENTREGA");
                     break;
-                case "4":
+                case "5":
                     context.getOrderService().deliverOrder(orderId);
                     System.out.println("Status definido para ENTREGUE");
                     break;
