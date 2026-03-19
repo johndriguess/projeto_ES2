@@ -98,10 +98,15 @@ public class Order implements Serializable {
 
     public boolean isConfirmed() {
         return status == OrderStatus.CONFIRMADO
+                || status == OrderStatus.AGUARDANDO_ACEITE_ENTREGADOR
                 || status == OrderStatus.PREPARACAO
                 || status == OrderStatus.PRONTO
                 || status == OrderStatus.EM_ENTREGA
                 || status == OrderStatus.ENTREGUE;
+    }
+
+    public boolean isAwaitingDeliveryAcceptance() {
+        return status == OrderStatus.AGUARDANDO_ACEITE_ENTREGADOR;
     }
 
     public boolean isPreparing() {

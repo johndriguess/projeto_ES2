@@ -28,7 +28,7 @@ public class DeliveryMenu {
             System.out.println("1 - Atualizar Localização");
             System.out.println("2 - Ver Notificações");
             System.out.println("3 - Alternar Disponibilidade");
-            System.out.println("4 - Ver Minhas Entregas");
+            System.out.println("4 - Ver Minhas Entregas / Aceitar ou Rejeitar Pedido");
             System.out.println("5 - Avaliar Cliente/Restaurante");
             System.out.println("0 - Sair");
             System.out.print("> ");
@@ -125,6 +125,51 @@ public class DeliveryMenu {
 
         if (!found) {
             System.out.println("Você não tem entregas no momento.");
+            return;
+        }
+
+        var pendingOrders = allOrders.stream()
+                .filter(order -> delivery.getId().equals(order.getAssignedDeliveryId()))
+                .filter(Order::isAwaitingDeliveryAcceptance)
+                .collect(java.util.stream.Collectors.toList());
+
+        if (pendingOrders.isEmpty()) {
+            return;
+        }
+
+        System.out.println("\nPedidos aguardando sua decisão:");
+        for (int i = 0; i < pendingOrders.size(); i++) {
+            Order order = pendingOrders.get(i);
+            System.out.printf("%d) Pedido %s - Total: R$ %.2f\n", i + 1, order.getId(), order.getTotal());
+        }
+
+        System.out.print("\nDeseja aceitar ou rejeitar um pedido? (a/r/n): ");
+        String action = context.getScanner().nextLine().trim().toLowerCase();
+        if (!"a".equals(action) && !"r".equals(action)) {
+            return;
+        }
+
+        System.out.print("Escolha o número do pedido: ");
+        int choice;
+        try {
+            choice = Integer.parseInt(context.getScanner().nextLine().trim());
+        } catch (NumberFormatException e) {
+            System.out.println("Entrada inválida.");
+            return;
+        }
+
+        if (choice < 1 || choice > pendingOrders.size()) {
+            System.out.println("Opção inválida.");
+            return;
+        }
+
+        String orderId = pendingOrders.get(choice - 1).getId();
+        if ("a".equals(action)) {
+            context.getOrderService().acceptOrderByDelivery(orderId, delivery.getId());
+            System.out.println("Pedido aceito com sucesso.");
+        } else {
+            context.getOrderService().rejectOrderByDelivery(orderId, delivery.getId());
+            System.out.println("Pedido rejeitado com sucesso.");
         }
     }
 

@@ -67,7 +67,7 @@ public class DeliveryAssignmentService {
 
         // Atribuir entregador ao pedido
         order.setAssignedDeliveryId(nearestDelivery.getId());
-        order.setStatus(OrderStatus.EM_ENTREGA);
+        order.setStatus(OrderStatus.AGUARDANDO_ACEITE_ENTREGADOR);
 
         // Notificar o entregador
         notificationService.notifyDelivery(

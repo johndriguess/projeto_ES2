@@ -84,9 +84,10 @@ public class RestaurantMenu {
             }
 
             System.out.println();
-            for (Order o : pendings) {
-                System.out.printf("ID: %s - Total: R$ %.2f - Itens: %d - Tipo: %s\n",
-                        o.getId(), o.getTotal(), o.getItems().size(),
+            for (int i = 0; i < pendings.size(); i++) {
+                Order o = pendings.get(i);
+                System.out.printf("%d) ID: %s - Total: R$ %.2f - Itens: %d - Tipo: %s\n",
+                        i + 1, o.getId(), o.getTotal(), o.getItems().size(),
                         o.isImmediate() ? "Imediato" : "Agendado");
             }
 

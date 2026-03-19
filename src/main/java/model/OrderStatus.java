@@ -2,6 +2,7 @@ package model;
 
 public enum OrderStatus {
     AGUARDANDO_CONFIRMACAO,
+    AGUARDANDO_ACEITE_ENTREGADOR,
     CONFIRMADO,
     PREPARACAO,
     PRONTO,

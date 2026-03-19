@@ -17,7 +17,7 @@ public class NotificationService {
                 orderId,
                 orderDetails);
 
-        Notification notification = new Notification(restaurantId, "RESTAURANT", message);
+        Notification notification = new Notification(restaurantId, "RESTAURANT", orderId, message);
         notifications.add(notification);
         return notification;
     }
@@ -31,7 +31,7 @@ public class NotificationService {
                 restaurantName,
                 deliveryAddress);
 
-        Notification notification = new Notification(deliveryId, "DELIVERY", message);
+        Notification notification = new Notification(deliveryId, "DELIVERY", orderId, message);
         notifications.add(notification);
         return notification;
     }
@@ -43,9 +43,17 @@ public class NotificationService {
                 orderId,
                 message);
 
-        Notification notification = new Notification(customerEmail, "CUSTOMER", fullMessage);
+        Notification notification = new Notification(customerEmail, "CUSTOMER", orderId, fullMessage);
         notifications.add(notification);
         return notification;
+    }
+
+    public void removeNotificationsByRecipientAndOrder(String recipientId, String orderId) {
+        if (recipientId == null || recipientId.isBlank() || orderId == null || orderId.isBlank()) {
+            return;
+        }
+
+        notifications.removeIf(n -> recipientId.equals(n.getRecipientId()) && orderId.equals(n.getOrderId()));
     }
 
     // Buscar notificações por destinatário

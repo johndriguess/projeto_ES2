@@ -74,6 +74,10 @@ public class OrderService {
 
         order.confirm(); // sets CONFIRMADO
 
+        if (notificationService != null) {
+            notificationService.removeNotificationsByRecipientAndOrder(order.getRestaurantId(), order.getId());
+        }
+
         // RF22 - Notificar restaurante quando pedido for confirmado
         if (notificationService != null) {
             Restaurant restaurant = restaurantRepository.findById(order.getRestaurantId())
@@ -196,6 +200,7 @@ public class OrderService {
         order.reject();
 
         if (notificationService != null) {
+            notificationService.removeNotificationsByRecipientAndOrder(order.getRestaurantId(), order.getId());
             // notificar restaurante também? poderia ser redundante
             notificationService.notifyCustomer(
                     order.getCustomerEmail(),
@@ -243,13 +248,67 @@ public class OrderService {
 
     public void dispatchOrder(String orderId) {
         Order order = findById(orderId);
-        if (!order.isReady()) {
+        if (order.isAwaitingDeliveryAcceptance()) {
+            throw new ValidationException("Pedido aguarda aceite do entregador.");
+        }
+        if (!order.isReady() && !order.isConfirmed()) {
             throw new ValidationException("Pedido deve estar pronto para ser despachado.");
         }
         order.setStatus(OrderStatus.EM_ENTREGA);
         orderRepository.update(order);
         if (notificationService != null) {
             notificationService.notifyCustomer(order.getCustomerEmail(), order.getId(), "Pedido em entrega.");
+        }
+    }
+
+    public void acceptOrderByDelivery(String orderId, String deliveryId) {
+        if (deliveryId == null || deliveryId.isBlank()) {
+            throw new ValidationException("ID do entregador é obrigatório.");
+        }
+
+        Order order = findById(orderId);
+
+        if (!order.isAwaitingDeliveryAcceptance()) {
+            throw new ValidationException("Pedido não está aguardando aceite do entregador.");
+        }
+
+        if (order.getAssignedDeliveryId() == null || !deliveryId.equals(order.getAssignedDeliveryId())) {
+            throw new ValidationException("Este pedido não está atribuído ao entregador informado.");
+        }
+
+        order.setStatus(OrderStatus.EM_ENTREGA);
+        orderRepository.update(order);
+
+        if (notificationService != null) {
+            notificationService.removeNotificationsByRecipientAndOrder(deliveryId, order.getId());
+            notificationService.notifyCustomer(order.getCustomerEmail(), order.getId(),
+                    "Seu pedido foi ACEITO pelo entregador e está em entrega.");
+        }
+    }
+
+    public void rejectOrderByDelivery(String orderId, String deliveryId) {
+        if (deliveryId == null || deliveryId.isBlank()) {
+            throw new ValidationException("ID do entregador é obrigatório.");
+        }
+
+        Order order = findById(orderId);
+
+        if (!order.isAwaitingDeliveryAcceptance()) {
+            throw new ValidationException("Pedido não está aguardando aceite do entregador.");
+        }
+
+        if (order.getAssignedDeliveryId() == null || !deliveryId.equals(order.getAssignedDeliveryId())) {
+            throw new ValidationException("Este pedido não está atribuído ao entregador informado.");
+        }
+
+        order.setAssignedDeliveryId(null);
+        order.setStatus(OrderStatus.REJEITADO);
+        orderRepository.update(order);
+
+        if (notificationService != null) {
+            notificationService.removeNotificationsByRecipientAndOrder(deliveryId, order.getId());
+            notificationService.notifyCustomer(order.getCustomerEmail(), order.getId(),
+                    "Seu pedido foi REJEITADO pelo entregador.");
         }
     }
 
