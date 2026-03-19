@@ -1,7 +1,10 @@
 package cli;
 
 import model.*;
+import util.DistanceCalculator;
 import util.ValidationException;
+
+import java.util.List;
 
 /**
  * Menu específico para entregadores
@@ -30,6 +33,7 @@ public class DeliveryMenu {
             System.out.println("3 - Alternar Disponibilidade");
             System.out.println("4 - Ver Minhas Entregas / Aceitar ou Rejeitar Pedido");
             System.out.println("5 - Avaliar Cliente/Restaurante");
+            System.out.println("6 - Ver Rota da Entrega");
             System.out.println("0 - Sair");
             System.out.print("> ");
 
@@ -51,6 +55,9 @@ public class DeliveryMenu {
                         break;
                     case "5":
                         rateOrderParticipants();
+                        break;
+                    case "6":
+                        viewDeliveryRoute();
                         break;
                     case "0":
                         System.out.println("Saindo...");
@@ -175,5 +182,68 @@ public class DeliveryMenu {
 
     private void rateOrderParticipants() {
         SharedMenus.deliveryRateOrder(context, delivery);
+    }
+
+    private void viewDeliveryRoute() {
+        System.out.println("\n=== Ver Rota da Entrega ===");
+
+        if (delivery.getCurrentLocation() == null) {
+            System.out.println("Atualize sua localização antes de visualizar a rota.");
+            return;
+        }
+
+        List<Order> assignedOrders = context.getOrderRepo().findAll().stream()
+                .filter(order -> delivery.getId().equals(order.getAssignedDeliveryId()))
+                .filter(order -> !order.isRejected() && !order.isDelivered())
+                .collect(java.util.stream.Collectors.toList());
+
+        if (assignedOrders.isEmpty()) {
+            System.out.println("Você não possui pedidos ativos para rota.");
+            return;
+        }
+
+        for (int i = 0; i < assignedOrders.size(); i++) {
+            Order order = assignedOrders.get(i);
+            System.out.printf("%d) Pedido %s - Status: %s\n", i + 1, order.getId(), order.getStatus());
+        }
+
+        System.out.print("Escolha o número do pedido (0 para cancelar): ");
+        int choice;
+        try {
+            choice = Integer.parseInt(context.getScanner().nextLine().trim());
+        } catch (NumberFormatException e) {
+            System.out.println("Entrada inválida.");
+            return;
+        }
+
+        if (choice == 0) {
+            return;
+        }
+
+        if (choice < 1 || choice > assignedOrders.size()) {
+            System.out.println("Opção inválida.");
+            return;
+        }
+
+        Order selectedOrder = assignedOrders.get(choice - 1);
+        Restaurant restaurant = context.getRestaurantRepo().findById(selectedOrder.getRestaurantId()).orElse(null);
+
+        if (restaurant == null || restaurant.getLocation() == null) {
+            System.out.println("Não foi possível obter a localização do restaurante para este pedido.");
+            return;
+        }
+
+        String from = delivery.getCurrentLocation().getAddress();
+        String to = restaurant.getLocation().getAddress();
+        double distanceKm = DistanceCalculator.calculateDistance(from, to);
+        int etaMinutes = DistanceCalculator.calculateEstimatedTime(from, to);
+
+        System.out.println("\n--- Rota Atual ---");
+        System.out.println("Trecho: Você -> Restaurante");
+        System.out.println("Origem: " + from);
+        System.out.println("Destino: " + to);
+        System.out.printf("Distância estimada: %.1f km\n", distanceKm);
+        System.out.println("Tempo estimado: " + etaMinutes + " minutos");
+        System.out.println("Observação: o endereço final do cliente não está disponível no pedido.");
     }
 }

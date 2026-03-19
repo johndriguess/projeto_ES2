@@ -91,10 +91,10 @@ public class RestaurantMenu {
                         o.isImmediate() ? "Imediato" : "Agendado");
             }
 
-            System.out.print("\nDeseja confirmar ou rejeitar algum pedido? (c/r/n): ");
+            System.out.print("\nDeseja aceitar, rejeitar ou cancelar algum pedido? (a/r/c/n): ");
             String action = context.getScanner().nextLine().trim().toLowerCase();
 
-            if (action.equals("c") || action.equals("r")) {
+            if (action.equals("a") || action.equals("r") || action.equals("c")) {
                 System.out.print("Escolha o número do pedido: ");
                 int choice = Integer.parseInt(context.getScanner().nextLine().trim());
                 if (choice < 1 || choice > pendings.size()) {
@@ -103,12 +103,28 @@ public class RestaurantMenu {
                 }
                 String orderId = pendings.get(choice - 1).getId();
 
-                if (action.equals("c")) {
+                if (action.equals("a")) {
                     context.getOrderService().confirmOrder(orderId);
-                    System.out.println("Pedido confirmado.");
+                    Order confirmedOrder = context.getOrderService().findById(orderId);
+
+                    try {
+                        context.getAssignmentService().assignDeliveryToOrder(
+                                confirmedOrder,
+                                restaurant.getLocation(),
+                                restaurant.getName(),
+                                "Endereço do cliente");
+                        context.getOrderRepo().update(confirmedOrder);
+                        System.out.println("Pedido aceito e entregador acionado.");
+                    } catch (ValidationException e) {
+                        System.out.println("Pedido aceito, mas sem entregador disponível no momento.");
+                    }
                 } else {
                     context.getOrderService().rejectOrder(orderId);
-                    System.out.println("Pedido rejeitado.");
+                    if (action.equals("c")) {
+                        System.out.println("Pedido cancelado.");
+                    } else {
+                        System.out.println("Pedido rejeitado.");
+                    }
                 }
             }
         } catch (ValidationException e) {

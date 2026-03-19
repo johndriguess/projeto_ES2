@@ -61,6 +61,14 @@ public class OrderService {
 
         orderRepository.save(order);
 
+        if (notificationService != null) {
+            String orderDetails = String.format("%d itens - Total: R$ %.2f",
+                    order.getItems().size(), order.getTotal());
+            notificationService.notifyRestaurant(restaurant.getId(), order.getId(), orderDetails);
+            notificationService.notifyCustomer(order.getCustomerEmail(), order.getId(),
+                    "Pedido recebido e aguardando confirmação do restaurante.");
+        }
+
         return order;
     }
 
@@ -78,20 +86,7 @@ public class OrderService {
             notificationService.removeNotificationsByRecipientAndOrder(order.getRestaurantId(), order.getId());
         }
 
-        // RF22 - Notificar restaurante quando pedido for confirmado
         if (notificationService != null) {
-            Restaurant restaurant = restaurantRepository.findById(order.getRestaurantId())
-                    .orElse(null);
-
-            if (restaurant != null) {
-                String orderDetails = String.format("%d itens - Total: R$ %.2f",
-                        order.getItems().size(), order.getTotal());
-                notificationService.notifyRestaurant(
-                        restaurant.getId(),
-                        order.getId(),
-                        orderDetails);
-            }
-            // também notificar cliente
             notificationService.notifyCustomer(
                     order.getCustomerEmail(),
                     order.getId(),
@@ -141,6 +136,14 @@ public class OrderService {
         order.setTotal(total);
 
         orderRepository.save(order);
+
+        if (notificationService != null) {
+            String orderDetails = String.format("%d itens - Total: R$ %.2f",
+                    order.getItems().size(), order.getTotal());
+            notificationService.notifyRestaurant(restaurant.getId(), order.getId(), orderDetails);
+            notificationService.notifyCustomer(order.getCustomerEmail(), order.getId(),
+                    "Pedido agendado recebido e aguardando confirmação do restaurante.");
+        }
 
         return order;
     }

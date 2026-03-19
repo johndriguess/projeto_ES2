@@ -1,10 +1,8 @@
 package cli;
 
-import model.Delivery;
 import model.MenuItem;
 import model.Order;
 import model.Restaurant;
-import util.ValidationException;
 
 final class OrderFlowHelper {
     private OrderFlowHelper() {
@@ -25,31 +23,10 @@ final class OrderFlowHelper {
     }
 
     static void confirmAndAssignOrder(MenuContext context, Order order, Restaurant restaurant, double distance) {
-        try {
-            context.getOrderService().confirmOrder(order.getId());
-            System.out.println("\nPedido confirmado com sucesso!");
-            System.out.println("Tempo estimado de entrega: " +
-                    context.getRestaurantService().calculateEstimatedTime(distance) + " minutos");
-
-            System.out.println("\nBuscando entregador disponível...");
-            context.getAssignmentService().assignDeliveryToOrder(
-                    order,
-                    restaurant.getLocation(),
-                    restaurant.getName(),
-                    "Endereço do cliente");
-
-            context.getOrderRepo().update(order);
-
-            Delivery delivery = context.getDeliveryRepo().findById(order.getAssignedDeliveryId())
-                    .orElse(null);
-            if (delivery != null) {
-                System.out.println("\nEntregador atribuído:");
-                System.out.println("   Nome: " + delivery.getName());
-                System.out.println("   Telefone: " + delivery.getPhone());
-            }
-        } catch (ValidationException e) {
-            System.out.println("Aviso: " + e.getMessage());
-            System.out.println("Pedido confirmado, mas será necessário atribuir entregador manualmente.");
-        }
+        System.out.println("\nPedido enviado ao restaurante com sucesso!");
+        System.out.println("Status atual: " + order.getStatus());
+        System.out.println("Tempo estimado (após aceite): " +
+                context.getRestaurantService().calculateEstimatedTime(distance) + " minutos");
+        System.out.println("Aguarde o restaurante aceitar o pedido.");
     }
 }

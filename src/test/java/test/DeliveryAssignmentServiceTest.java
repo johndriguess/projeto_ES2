@@ -99,8 +99,8 @@ class DeliveryAssignmentServiceTest {
 
                 assertNotNull(order.getAssignedDeliveryId());
                 assertEquals(delivery.getId(), order.getAssignedDeliveryId());
-                assertTrue(order.isOutForDelivery());
-                assertEquals(OrderStatus.EM_ENTREGA, order.getStatus());
+                assertTrue(order.isAwaitingDeliveryAcceptance());
+                assertEquals(OrderStatus.AGUARDANDO_ACEITE_ENTREGADOR, order.getStatus());
 
                 // Verificar se notificação foi enviada
                 List<Notification> notifications = notificationService.getNotificationsByRecipient(delivery.getId());
