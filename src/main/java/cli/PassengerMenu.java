@@ -34,6 +34,7 @@ public class PassengerMenu {
             System.out.println("12 - Fazer Pedido Agendado");
             System.out.println("13 - Consultar Status do Pedido");
             System.out.println("14 - Avaliar Entregador/Restaurante");
+            System.out.println("15 - Confirmar Entrega do Pedido");
             System.out.println("0 - Sair");
             System.out.print("> ");
 
@@ -82,6 +83,9 @@ public class PassengerMenu {
                         break;
                     case "14":
                         rateOrderParticipants();
+                        break;
+                    case "15":
+                        confirmOrderDelivery();
                         break;
                     case "0":
                         System.out.println("Saindo...");
@@ -335,5 +339,9 @@ public class PassengerMenu {
 
     private void rateOrderParticipants() {
         SharedMenus.customerRateOrder(context, passenger.getEmail());
+    }
+
+    private void confirmOrderDelivery() {
+        SharedMenus.confirmOrderDeliveryByCustomer(context, passenger.getEmail());
     }
 }

@@ -18,9 +18,9 @@ public class RestaurantService {
     // =========================
     // Cadastro de restaurante
     // =========================
-    public Restaurant register(String name, String email, String cnpj, Location location) {
+    public Restaurant register(String name, String email, String password, String cnpj, Location location) {
 
-        validate(name, email, cnpj, location);
+        validate(name, email, password, cnpj, location);
 
         if (repository.findByEmail(email).isPresent()) {
             throw new ValidationException("Email já cadastrado.");
@@ -30,14 +30,14 @@ public class RestaurantService {
             throw new ValidationException("CNPJ já cadastrado.");
         }
 
-        Restaurant restaurant = new Restaurant(name, email, cnpj, location);
+        Restaurant restaurant = new Restaurant(name, email, password.trim(), cnpj, location);
 
         repository.save(restaurant);
 
         return restaurant;
     }
 
-    private void validate(String name, String email, String cnpj, Location location) {
+    private void validate(String name, String email, String password, String cnpj, Location location) {
 
         if (name == null || name.isBlank()) {
             throw new ValidationException("Nome é obrigatório.");
@@ -45,6 +45,14 @@ public class RestaurantService {
 
         if (email == null || !email.contains("@")) {
             throw new ValidationException("Email inválido.");
+        }
+
+        if (password == null || password.isBlank()) {
+            throw new ValidationException("Senha é obrigatória.");
+        }
+
+        if (password.trim().length() < 6) {
+            throw new ValidationException("A senha deve ter no mínimo 6 caracteres.");
         }
 
         if (cnpj == null || cnpj.length() != 14) {
@@ -61,8 +69,10 @@ public class RestaurantService {
     // =========================
 
     public double calculateDeliveryFee(double distance) {
-        if (distance <= 5) return 5.0;
-        if (distance <= 10) return 8.0;
+        if (distance <= 5)
+            return 5.0;
+        if (distance <= 10)
+            return 8.0;
         return 12.0;
     }
 
@@ -86,7 +96,7 @@ public class RestaurantService {
     // =========================
 
     public List<Restaurant> findAvailableRestaurants(Location clientLocation,
-                                                     double radius) {
+            double radius) {
 
         if (clientLocation == null) {
             throw new ValidationException("Localização do cliente é obrigatória.");
@@ -95,7 +105,7 @@ public class RestaurantService {
         return repository.findAll()
                 .stream()
                 .filter(Restaurant::isActive) // só ativos
-                .filter(Restaurant::isOpen)   // só abertos
+                .filter(Restaurant::isOpen) // só abertos
                 .filter(r -> r.getLocation()
                         .distanceTo(clientLocation) <= radius) // dentro do raio
                 .collect(java.util.stream.Collectors.toList());

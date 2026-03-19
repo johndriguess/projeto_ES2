@@ -13,99 +13,92 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class RestaurantAvailabilityTest {
 
-    private RestaurantService service;
+        private RestaurantService service;
 
-    @BeforeEach
-    void setup() {
-        RestaurantRepository repository = new RestaurantRepository();
-        service = new RestaurantService(repository);
-    }
+        @BeforeEach
+        void setup() {
+                String dbPath = "target/test-data/restaurant-availability-" + System.nanoTime() + ".db";
+                RestaurantRepository repository = new RestaurantRepository(dbPath);
+                service = new RestaurantService(repository);
+        }
 
-    @Test
-    void shouldReturnRestaurantWithinRadius() {
+        @Test
+        void shouldReturnRestaurantWithinRadius() {
 
-        service.register(
-                "Pizza",
-                "pizza@email.com",
-                "12345678901234",
-                new Location("Centro", "", 0, 0)
-        );
+                service.register(
+                                "Pizza",
+                                "pizza@email.com",
+                                "senha123",
+                                "12345678901234",
+                                new Location("Centro", "", 0, 0));
 
-        service.register(
-                "Sushi",
-                "sushi@email.com",
-                "12345678901235",
-                new Location("Bairro", "", 20, 20)
-        );
+                service.register(
+                                "Sushi",
+                                "sushi@email.com",
+                                "senha123",
+                                "12345678901235",
+                                new Location("Bairro", "", 20, 20));
 
-        List<Restaurant> result =
-                service.findAvailableRestaurants(
-                        new Location("Cliente", "", 1, 1),
-                        5
-                );
+                List<Restaurant> result = service.findAvailableRestaurants(
+                                new Location("Cliente", "", 1, 1),
+                                5);
 
-        assertEquals(1, result.size());
-        assertEquals("Pizza", result.get(0).getName());
-    }
+                assertEquals(1, result.size());
+                assertEquals("Pizza", result.get(0).getName());
+        }
 
-    @Test
-    void shouldNotReturnClosedRestaurant() {
+        @Test
+        void shouldNotReturnClosedRestaurant() {
 
-        Restaurant r = service.register(
-                "Burger",
-                "burger@email.com",
-                "12345678901236",
-                new Location("Centro", "", 0, 0)
-        );
+                Restaurant r = service.register(
+                                "Burger",
+                                "burger@email.com",
+                                "senha123",
+                                "12345678901236",
+                                new Location("Centro", "", 0, 0));
 
-        r.close();
+                r.close();
 
-        List<Restaurant> result =
-                service.findAvailableRestaurants(
-                        new Location("Cliente", "", 1, 1),
-                        5
-                );
+                List<Restaurant> result = service.findAvailableRestaurants(
+                                new Location("Cliente", "", 1, 1),
+                                5);
 
-        assertTrue(result.isEmpty());
-    }
+                assertTrue(result.isEmpty());
+        }
 
-    @Test
-    void shouldNotReturnInactiveRestaurant() {
+        @Test
+        void shouldNotReturnInactiveRestaurant() {
 
-        Restaurant r = service.register(
-                "Lanche",
-                "lanche@email.com",
-                "12345678901237",
-                new Location("Centro", "", 0, 0)
-        );
+                Restaurant r = service.register(
+                                "Lanche",
+                                "lanche@email.com",
+                                "senha123",
+                                "12345678901237",
+                                new Location("Centro", "", 0, 0));
 
-        r.deactivate();
+                r.deactivate();
 
-        List<Restaurant> result =
-                service.findAvailableRestaurants(
-                        new Location("Cliente", "", 1, 1),
-                        5
-                );
+                List<Restaurant> result = service.findAvailableRestaurants(
+                                new Location("Cliente", "", 1, 1),
+                                5);
 
-        assertTrue(result.isEmpty());
-    }
+                assertTrue(result.isEmpty());
+        }
 
-    @Test
-    void shouldNotReturnRestaurantOutsideRadius() {
+        @Test
+        void shouldNotReturnRestaurantOutsideRadius() {
 
-        service.register(
-                "Churrasco",
-                "churrasco@email.com",
-                "12345678901238",
-                new Location("Distante", "", 50, 50)
-        );
+                service.register(
+                                "Churrasco",
+                                "churrasco@email.com",
+                                "senha123",
+                                "12345678901238",
+                                new Location("Distante", "", 50, 50));
 
-        List<Restaurant> result =
-                service.findAvailableRestaurants(
-                        new Location("Cliente", "", 0, 0),
-                        5
-                );
+                List<Restaurant> result = service.findAvailableRestaurants(
+                                new Location("Cliente", "", 0, 0),
+                                5);
 
-        assertTrue(result.isEmpty());
-    }
+                assertTrue(result.isEmpty());
+        }
 }

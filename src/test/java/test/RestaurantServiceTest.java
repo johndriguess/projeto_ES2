@@ -18,7 +18,8 @@ class RestaurantServiceTest {
 
     @BeforeEach
     void setup() {
-        repository = new RestaurantRepository();
+        String dbPath = "target/test-data/restaurant-service-" + System.nanoTime() + ".db";
+        repository = new RestaurantRepository(dbPath);
         service = new RestaurantService(repository);
     }
 
@@ -28,9 +29,9 @@ class RestaurantServiceTest {
         Restaurant restaurant = service.register(
                 "Pizza Top",
                 "pizza@email.com",
+                "senha123",
                 "12345678901234",
-                new Location("Rua A")
-        );
+                new Location("Rua A"));
 
         assertNotNull(restaurant.getId());
         assertEquals("Pizza Top", restaurant.getName());
@@ -42,18 +43,16 @@ class RestaurantServiceTest {
         service.register(
                 "Pizza Top",
                 "pizza@email.com",
+                "senha123",
                 "12345678901234",
-                new Location("Rua A")
-        );
+                new Location("Rua A"));
 
-        assertThrows(ValidationException.class, () ->
-                service.register(
-                        "Outra",
-                        "pizza@email.com",
-                        "99999999999999",
-                        new Location("Rua B")
-                )
-        );
+        assertThrows(ValidationException.class, () -> service.register(
+                "Outra",
+                "pizza@email.com",
+                "senha123",
+                "99999999999999",
+                new Location("Rua B")));
     }
 
     @Test
@@ -76,12 +75,11 @@ class RestaurantServiceTest {
         Restaurant restaurant = service.register(
                 "Pizza Top",
                 "pizza@email.com",
+                "senha123",
                 "12345678901234",
-                new Location("Rua A")
-        );
+                new Location("Rua A"));
 
-        RestaurantDetails details =
-                service.getRestaurantDetails(restaurant.getId(), 5);
+        RestaurantDetails details = service.getRestaurantDetails(restaurant.getId(), 5);
 
         assertNotNull(details);
         assertNotNull(details.getMenu());

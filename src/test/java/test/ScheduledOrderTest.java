@@ -22,15 +22,17 @@ class ScheduledOrderTest {
 
         @BeforeEach
         void setup() {
-                RestaurantRepository restaurantRepository = new RestaurantRepository();
+                String basePath = "target/test-data/scheduled-order-" + System.nanoTime();
+                RestaurantRepository restaurantRepository = new RestaurantRepository(basePath + "-restaurants.db");
                 RestaurantService restaurantService = new RestaurantService(restaurantRepository);
-                OrderRepository orderRepository = new OrderRepository();
+                OrderRepository orderRepository = new OrderRepository(basePath + "-orders.db");
 
                 orderService = new OrderService(orderRepository, restaurantRepository, restaurantService);
 
                 restaurant = restaurantService.register(
                                 "Pizza Top",
                                 "pizza@email.com",
+                                "senha123",
                                 "12345678901234",
                                 new Location("Rua A", "", 0, 0));
 

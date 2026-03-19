@@ -1,7 +1,7 @@
 === RECIBO ELETRÔNICO ===
-Recibo ID: receipt-f34ee019-e32d-47d0-9055-e295c81f84e1-e8ef3cb9
-Corrida ID: f34ee019-e32d-47d0-9055-e295c81f84e1
-Gerado em: 2026-03-16T13:59:02.658248Z
+Recibo ID: receipt-2c3c8f20-579b-4ae9-91de-4919c0a0df44-40cdde13
+Corrida ID: 2c3c8f20-579b-4ae9-91de-4919c0a0df44
+Gerado em: 2026-03-19T04:17:30.253835Z
 
 --- Passageiro ---
 Nome: Passageiro

@@ -24,7 +24,8 @@ class DeliveryAssignmentServiceTest {
 
         @BeforeEach
         void setup() {
-                deliveryRepository = new DeliveryRepository();
+                String dbPath = "target/test-data/delivery-assignment-" + System.nanoTime() + ".db";
+                deliveryRepository = new DeliveryRepository(dbPath);
                 notificationService = new NotificationService();
                 assignmentService = new DeliveryAssignmentService(deliveryRepository, notificationService);
                 deliveryService = new DeliveryService(deliveryRepository);

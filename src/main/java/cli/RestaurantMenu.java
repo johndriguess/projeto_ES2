@@ -153,7 +153,7 @@ public class RestaurantMenu {
             System.out.println("1 - Preparação");
             System.out.println("2 - Pronto");
             System.out.println("3 - Em entrega");
-            System.out.println("4 - Entregue");
+            System.out.println("4 - Entregue (aguardar confirmação do cliente)");
             System.out.print("Escolha: ");
 
             String choice = context.getScanner().nextLine().trim();
@@ -173,7 +173,7 @@ public class RestaurantMenu {
                     break;
                 case "4":
                     context.getOrderService().deliverOrder(orderId);
-                    System.out.println("Status definido para ENTREGUE");
+                    System.out.println("Status definido para AGUARDANDO_CONFIRMACAO_CLIENTE");
                     break;
                 default:
                     System.out.println("Opção inválida.");

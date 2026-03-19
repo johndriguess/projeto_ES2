@@ -555,6 +555,33 @@ public class SharedMenus {
         }
     }
 
+    public static void confirmOrderDeliveryByCustomer(MenuContext context, String customerEmail) {
+        System.out.println("=== Confirmar Entrega do Pedido ===");
+        try {
+            List<Order> ordersAwaitingConfirmation = context.getOrderRepo().findAll().stream()
+                    .filter(order -> order.getCustomerEmail() != null
+                            && customerEmail != null
+                            && order.getCustomerEmail().equalsIgnoreCase(customerEmail))
+                    .filter(order -> order.isAwaitingCustomerConfirmation() || order.isOutForDelivery())
+                    .collect(Collectors.toList());
+
+            Order selectedOrder = MenuSelectionHelper.selectOrderFromList(
+                    context,
+                    ordersAwaitingConfirmation,
+                    "Selecione o pedido para confirmar recebimento");
+
+            if (selectedOrder == null) {
+                return;
+            }
+
+            context.getOrderService().confirmDeliveryByCustomer(selectedOrder.getId(), customerEmail);
+            System.out.println("Entrega confirmada com sucesso! O pedido foi finalizado.");
+            System.out.println("Agora as avaliações do pedido estão disponíveis.");
+        } catch (ValidationException e) {
+            System.out.println("Erro: " + e.getMessage());
+        }
+    }
+
     public static void deliveryRateOrder(MenuContext context, Delivery delivery) {
         System.out.println("=== Avaliar Cliente/Restaurante ===");
         try {

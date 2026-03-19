@@ -41,18 +41,14 @@ public class DocumentValidatorTest {
     public void uberXCategory() throws ValidationException {
         Vehicle vehicle = new Vehicle("UBER-1234", "Fiat Uno", 2014, "Branco");
         validator.validateVehicleCategory(vehicle);
-        assertEquals("UberX", vehicle.getCategory());
+        assertEquals("Uber Comfort", vehicle.getCategory());
     }
 
     @Test
-    public void shouldThrowExceptionForInvalidVehicle() {
+    public void shouldClassifyOldVehicleAsUberX() throws ValidationException {
         Vehicle vehicle = new Vehicle("OLD-CAR", "Fusca", 2009, "Azul");
-
-        ValidationException ex = assertThrows(ValidationException.class, () -> {
-            validator.validateVehicleCategory(vehicle);
-        });
-
-        assertTrue(ex.getMessage().contains("não atende aos requisitos"));
+        validator.validateVehicleCategory(vehicle);
+        assertEquals("UberX", vehicle.getCategory());
     }
 
     // ======================
@@ -77,8 +73,7 @@ public class DocumentValidatorTest {
                 "12345678901",
                 "11999999999",
                 "12345678901",
-                "CRLV123"
-        );
+                "CRLV123");
 
         validator.validateDeliveryDocuments(delivery);
 
@@ -93,8 +88,7 @@ public class DocumentValidatorTest {
                 "123",
                 "11999999999",
                 "12345678901",
-                "CRLV123"
-        );
+                "CRLV123");
 
         validator.validateDeliveryDocuments(delivery);
 

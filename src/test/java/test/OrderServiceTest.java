@@ -27,10 +27,11 @@ class OrderServiceTest {
 
     @BeforeEach
     void setup() {
+        String basePath = "target/test-data/order-service-" + System.nanoTime();
 
-        RestaurantRepository restaurantRepository = new RestaurantRepository();
+        RestaurantRepository restaurantRepository = new RestaurantRepository(basePath + "-restaurants.db");
         RestaurantService restaurantService = new RestaurantService(restaurantRepository);
-        OrderRepository orderRepository = new OrderRepository();
+        OrderRepository orderRepository = new OrderRepository(basePath + "-orders.db");
 
         notificationService = new NotificationService();
         orderService = new OrderService(orderRepository, restaurantRepository, restaurantService);
@@ -39,9 +40,9 @@ class OrderServiceTest {
         restaurant = restaurantService.register(
                 "Pizza Top",
                 "pizza@email.com",
+                "senha123",
                 "12345678901234",
-                new Location("Rua A")
-        );
+                new Location("Rua A"));
 
         restaurant.addMenuItem(new MenuItem("Pizza Calabresa", "Tradicional", 40));
         restaurant.addMenuItem(new MenuItem("Refrigerante", "Lata", 10));
@@ -67,8 +68,7 @@ class OrderServiceTest {
                 "cliente@teste.com",
                 restaurant.getMenu(),
                 5,
-                0
-        );
+                0);
 
         assertNotNull(order.getId());
         assertTrue(order.isAwaitingConfirmation());
@@ -86,8 +86,7 @@ class OrderServiceTest {
                 "status@teste.com",
                 restaurant.getMenu(),
                 5,
-                0
-        );
+                0);
         assertEquals(OrderStatus.AGUARDANDO_CONFIRMACAO, orderService.getOrderStatus(o.getId()));
         orderService.confirmOrder(o.getId());
         assertEquals(OrderStatus.PREPARACAO, orderService.getOrderStatus(o.getId()));
@@ -101,16 +100,14 @@ class OrderServiceTest {
                 "a@b.com",
                 restaurant.getMenu(),
                 5,
-                0
-        );
+                0);
 
         Order o2 = orderService.createOrder(
                 restaurant.getId(),
                 "a@b.com",
                 restaurant.getMenu(),
                 5,
-                0
-        );
+                0);
         // confirmar o segundo
         orderService.confirmOrder(o2.getId());
 
@@ -126,8 +123,7 @@ class OrderServiceTest {
                 "email@c.com",
                 restaurant.getMenu(),
                 5,
-                0
-        );
+                0);
         orderService.confirmOrder(o.getId());
 
         List<Order> pending = orderService.getPendingOrdersForRestaurant(restaurant.getId());
@@ -136,9 +132,7 @@ class OrderServiceTest {
 
     @Test
     void shouldThrowWhenRestaurantNotFoundForPending() {
-        assertThrows(ValidationException.class, () -> 
-            orderService.getPendingOrdersForRestaurant("non-existent")
-        );
+        assertThrows(ValidationException.class, () -> orderService.getPendingOrdersForRestaurant("non-existent"));
     }
 
     @Test
@@ -148,8 +142,7 @@ class OrderServiceTest {
                 "cust@rej.com",
                 restaurant.getMenu(),
                 5,
-                0
-        );
+                0);
         assertTrue(o.isAwaitingConfirmation());
 
         orderService.rejectOrder(o.getId());
@@ -167,8 +160,7 @@ class OrderServiceTest {
                 "cust@flow.com",
                 restaurant.getMenu(),
                 5,
-                0
-        );
+                0);
 
         // confirmOrder automatically moves to PREPARACAO
         orderService.confirmOrder(o.getId());
@@ -187,6 +179,11 @@ class OrderServiceTest {
 
         // deliver
         orderService.deliverOrder(o.getId());
+        assertTrue(o.isAwaitingCustomerConfirmation());
+        assertEquals(OrderStatus.AGUARDANDO_CONFIRMACAO_CLIENTE, o.getStatus());
+
+        // customer confirms receipt
+        orderService.confirmDeliveryByCustomer(o.getId(), "cust@flow.com");
         assertTrue(o.isDelivered());
         assertEquals(OrderStatus.ENTREGUE, o.getStatus());
 
@@ -196,32 +193,48 @@ class OrderServiceTest {
     }
 
     @Test
+    void shouldNotConfirmDeliveryForDifferentCustomer() {
+        Order o = orderService.createOrder(
+                restaurant.getId(),
+                "cliente@ok.com",
+                restaurant.getMenu(),
+                5,
+                0);
+
+        orderService.confirmOrder(o.getId());
+        orderService.markReady(o.getId());
+        orderService.dispatchOrder(o.getId());
+        orderService.deliverOrder(o.getId());
+
+        ValidationException ex = assertThrows(ValidationException.class,
+                () -> orderService.confirmDeliveryByCustomer(o.getId(), "outro@teste.com"));
+
+        assertEquals("Este pedido não pertence ao cliente informado.", ex.getMessage());
+    }
+
+    @Test
     void confirmOrderShouldNotifyCustomer() {
         Order o = orderService.createOrder(
                 restaurant.getId(),
                 "cust@ok.com",
                 restaurant.getMenu(),
                 5,
-                0
-        );
+                0);
 
         orderService.confirmOrder(o.getId());
 
         List<Notification> notes = notificationService.getNotificationsByRecipient("cust@ok.com");
-        assertEquals(1, notes.size());
-        assertTrue(notes.get(0).getMessage().contains("CONFIRMADO"));
+        assertEquals(2, notes.size());
+        assertTrue(notes.stream().anyMatch(n -> n.getMessage().contains("CONFIRMADO")));
     }
 
     @Test
     void shouldThrowExceptionWhenNoItems() {
-        assertThrows(ValidationException.class, () ->
-                orderService.createOrder(
-                        restaurant.getId(),
-                        "email@none.com",
-                        List.of(),
-                        5,
-                        0
-                )
-        );
+        assertThrows(ValidationException.class, () -> orderService.createOrder(
+                restaurant.getId(),
+                "email@none.com",
+                List.of(),
+                5,
+                0));
     }
 }

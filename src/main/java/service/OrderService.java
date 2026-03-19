@@ -258,10 +258,35 @@ public class OrderService {
         if (!order.isOutForDelivery()) {
             throw new ValidationException("Pedido não está em entrega.");
         }
-        order.setStatus(OrderStatus.ENTREGUE);
+        order.setStatus(OrderStatus.AGUARDANDO_CONFIRMACAO_CLIENTE);
         orderRepository.update(order);
         if (notificationService != null) {
-            notificationService.notifyCustomer(order.getCustomerEmail(), order.getId(), "Pedido entregue.");
+            notificationService.notifyCustomer(order.getCustomerEmail(), order.getId(),
+                    "Pedido entregue ao destino. Confirme o recebimento para finalizar.");
+        }
+    }
+
+    public void confirmDeliveryByCustomer(String orderId, String customerEmail) {
+        if (customerEmail == null || customerEmail.isBlank()) {
+            throw new ValidationException("Email do cliente é obrigatório.");
+        }
+
+        Order order = findById(orderId);
+
+        if (!customerEmail.equalsIgnoreCase(order.getCustomerEmail())) {
+            throw new ValidationException("Este pedido não pertence ao cliente informado.");
+        }
+
+        if (!order.isAwaitingCustomerConfirmation() && !order.isOutForDelivery()) {
+            throw new ValidationException("Pedido não está apto para confirmação de entrega.");
+        }
+
+        order.setStatus(OrderStatus.ENTREGUE);
+        orderRepository.update(order);
+
+        if (notificationService != null) {
+            notificationService.notifyCustomer(order.getCustomerEmail(), order.getId(),
+                    "Pedido confirmado e finalizado. Obrigado!");
         }
     }
 

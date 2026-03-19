@@ -12,16 +12,18 @@ public class Restaurant implements Serializable {
     private String id;
     private String name;
     private String email;
+    private String password;
     private String cnpj;
     private Location location;
     private boolean active;
     private boolean open;
     private final List<MenuItem> menu = new ArrayList<>();
 
-    public Restaurant(String name, String email, String cnpj, Location location) {
+    public Restaurant(String name, String email, String password, String cnpj, Location location) {
         this.id = UUID.randomUUID().toString();
         this.name = name;
         this.email = email;
+        this.password = password;
         this.cnpj = cnpj;
         this.location = location;
         this.active = true;
@@ -38,6 +40,10 @@ public class Restaurant implements Serializable {
 
     public String getEmail() {
         return email;
+    }
+
+    public String getPassword() {
+        return password;
     }
 
     public String getCnpj() {

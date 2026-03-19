@@ -16,7 +16,8 @@ class DeliveryServiceTest {
 
     @BeforeEach
     void setup() {
-        service = new DeliveryService(new DeliveryRepository());
+        String dbPath = "target/test-data/delivery-service-" + System.nanoTime() + ".db";
+        service = new DeliveryService(new DeliveryRepository(dbPath));
     }
 
     // ✅ RF02 - Teste de cadastro completo com documentos
@@ -73,15 +74,13 @@ class DeliveryServiceTest {
     // 🆕 RF02 — entregador rejeitado por CPF inválido
     @Test
     void shouldRejectDeliveryWithInvalidCPF() {
-        Delivery delivery = service.register(
+        assertThrows(ValidationException.class, () -> service.register(
                 "Maria",
                 "maria2@email.com",
                 "123",
                 "11999999999",
                 "12345678901",
-                "CRLV123");
-
-        assertEquals(DeliveryStatus.REJEITADO, delivery.getValidationStatus());
+                "CRLV123"));
     }
 
     // 🆕 RF02 - Validação de CNH obrigatória

@@ -6,6 +6,7 @@ public enum OrderStatus {
     PREPARACAO,
     PRONTO,
     EM_ENTREGA,
+    AGUARDANDO_CONFIRMACAO_CLIENTE,
     ENTREGUE,
     REJEITADO
 }

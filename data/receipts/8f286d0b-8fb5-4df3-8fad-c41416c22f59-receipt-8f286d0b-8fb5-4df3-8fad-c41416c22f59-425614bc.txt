@@ -1,7 +1,7 @@
 === RECIBO ELETRÔNICO ===
-Recibo ID: receipt-42391c00-a45c-4b0a-8584-42e7a98d15e5-5ab2be51
-Corrida ID: 42391c00-a45c-4b0a-8584-42e7a98d15e5
-Gerado em: 2026-03-16T13:59:02.684304Z
+Recibo ID: receipt-8f286d0b-8fb5-4df3-8fad-c41416c22f59-425614bc
+Corrida ID: 8f286d0b-8fb5-4df3-8fad-c41416c22f59
+Gerado em: 2026-03-19T04:12:24.061150Z
 
 --- Passageiro ---
 Nome: E2E Passenger

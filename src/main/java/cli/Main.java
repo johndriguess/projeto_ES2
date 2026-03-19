@@ -165,9 +165,16 @@ public class Main {
         // Verificar se existe como Restaurant
         Restaurant restaurant = restaurantRepo.findByEmail(email).orElse(null);
         if (restaurant != null) {
-            // Restaurantes não têm senha no modelo atual, apenas verificamos existência
-            profile.setRestaurant(restaurant);
-            foundAny = true;
+            String storedPassword = restaurant.getPassword();
+            boolean passwordMatches = storedPassword != null
+                    && (storedPassword.equals(password) || storedPassword.trim().equals(password.trim()));
+
+            if (passwordMatches) {
+                profile.setRestaurant(restaurant);
+                foundAny = true;
+            } else if (!foundAny) {
+                authErrorMessage = "Senha incorreta para restaurante.";
+            }
         }
 
         if (!foundAny) {
@@ -312,6 +319,9 @@ public class Main {
         System.out.print("CNPJ (14 dígitos): ");
         String cnpj = sc.nextLine();
 
+        System.out.print("Senha: ");
+        String password = sc.nextLine();
+
         System.out.print("Endereço: ");
         String address = sc.nextLine();
 
@@ -333,7 +343,7 @@ public class Main {
 
         try {
             Location location = new Location(address, "", lat, lon);
-            Restaurant restaurant = restaurantService.register(name, email, cnpj, location);
+            Restaurant restaurant = restaurantService.register(name, email, password, cnpj, location);
 
             System.out.println("\nRestaurante cadastrado com sucesso!");
             System.out.println("Nome: " + restaurant.getName());

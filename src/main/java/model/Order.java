@@ -37,7 +37,8 @@ public class Order implements Serializable {
         this.orderType = OrderType.IMEDIATO;
     }
 
-    public Order(String restaurantId, String customerEmail, List<MenuItem> items, OrderType orderType, LocalDateTime scheduledTime) {
+    public Order(String restaurantId, String customerEmail, List<MenuItem> items, OrderType orderType,
+            LocalDateTime scheduledTime) {
         this.id = UUID.randomUUID().toString();
         this.restaurantId = restaurantId;
         this.customerEmail = customerEmail;
@@ -113,6 +114,10 @@ public class Order implements Serializable {
 
     public boolean isOutForDelivery() {
         return status == OrderStatus.EM_ENTREGA;
+    }
+
+    public boolean isAwaitingCustomerConfirmation() {
+        return status == OrderStatus.AGUARDANDO_CONFIRMACAO_CLIENTE;
     }
 
     public boolean isDelivered() {
